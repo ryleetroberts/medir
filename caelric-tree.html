@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#eceef1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#08090f" media="(prefers-color-scheme: dark)">
+<meta name="description" content="The complete family tree of House Caelric, with siblings, consorts and cadet branches.">
+<title>House Caelric, the Full Line – The Mediran Chronicles</title>
+<script src="theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300..600&family=Marcellus&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="medir.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<style>
+  /* ── App frame: top bar, header, then the tree fills the rest ── */
+  html, body { height: 100%; }
+  body.app {
+    display: grid; grid-template-rows: auto auto minmax(0, 1fr);
+    height: 100vh; height: 100dvh; overflow: hidden;
+  }
+  .medir-bar { max-width: none; width: 100%; }
+
+  .tree-head {
+    position: relative; z-index: 20;
+    padding: .35rem var(--pad-r) .8rem var(--pad-l);
+    background: var(--bg); border-bottom: 1px solid var(--border);
+  }
+  .th-row { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.25rem; }
+  h1 {
+    display: flex; align-items: center; gap: .5em; margin: 0;
+    font-family: var(--font-display); font-weight: 400; line-height: 1.1;
+    font-size: clamp(1.3rem, 1rem + 1.2vw, 1.85rem);
+  }
+  h1 .sigil { width: 1.15em; height: 1.15em; color: var(--gold); }
+
+  .search { position: relative; flex: 1 1 15rem; max-width: 26rem; margin-left: auto; }
+  .search > svg { position: absolute; left: .75rem; top: 50%; width: 1rem; height: 1rem; transform: translateY(-50%); color: var(--text-ghost); pointer-events: none; }
+  #q {
+    width: 100%; height: 44px; padding: 0 .9rem 0 2.3rem;
+    background: var(--surface-3); color: var(--text);
+    border: 1px solid var(--border); border-radius: 3px; box-shadow: var(--sunk);
+    font-family: var(--font-ui); font-size: 1rem;
+  }
+  #q::placeholder { color: var(--text-ghost); opacity: 1; }
+  #q:focus { outline: none; border-color: var(--gold-line); }
+  #results {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40;
+    list-style: none; margin: 0; padding: 4px; max-height: 60vh; overflow: auto; overscroll-behavior: contain;
+    background: var(--surface); border: 1px solid var(--border-hi); border-radius: 4px;
+    box-shadow: 0 14px 30px -14px rgba(0,0,0,.55);
+  }
+  #results li { padding: .5rem .65rem; border-radius: 3px; cursor: pointer; }
+  #results li[aria-selected="true"] { background: var(--gold-fill); box-shadow: inset 0 0 0 1px var(--gold-line); }
+  #results .r-name { display: block; font-family: var(--font-display); font-size: 1.0625rem; color: var(--text); }
+  #results .r-sub { display: block; font-family: var(--font-ui); font-size: .8125rem; color: var(--text-dim); }
+  #results .r-none { padding: .6rem .65rem; font-family: var(--font-ui); font-size: .9375rem; color: var(--text-dim); cursor: default; }
+
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
+  .tools button {
+    min-width: 44px; min-height: 40px; padding: 0 .8rem;
+    background: var(--surface-2); color: var(--text);
+    border: 1px solid var(--border-hi); border-radius: 3px; box-shadow: inset 0 1px 0 var(--hi);
+    font-family: var(--font-ui); font-size: .9375rem;
+  }
+  .tools button:active { box-shadow: var(--sunk); }
+  .tools button[aria-pressed="true"], .tools button[aria-expanded="true"] {
+    color: var(--gold); border-color: var(--gold-line); background: var(--gold-fill);
+  }
+  .tools .sep { width: 1px; height: 1.5rem; margin: 0 .25rem; background: var(--border); }
+  @media (hover: hover) and (pointer: fine) { .tools button:hover { border-color: var(--line); } }
+
+  .yearbar { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1rem; margin-top: .75rem; }
+  .yearbar[hidden], .key[hidden] { display: none; }
+  .yr { min-width: 6.5ch; font-family: var(--font-display); font-size: 1.5rem; line-height: 1; }
+  #year { flex: 1 1 14rem; min-width: 10rem; height: 44px; accent-color: var(--gold); }
+  .reigning { flex-basis: 100%; margin: 0; font-family: var(--font-ui); font-size: .9375rem; color: var(--text-dim); }
+  @media (min-width: 48rem) { .reigning { flex-basis: auto; } }
+
+  .key { display: flex; flex-wrap: wrap; gap: .45rem 1.2rem; margin: .75rem 0 0; padding: 0; list-style: none; font-family: var(--font-ui); font-size: .9rem; color: var(--text-dim); }
+  .key li { display: flex; align-items: center; gap: .5rem; }
+  .key i { display: inline-block; width: 1.1rem; height: 1.1rem; border-radius: 2px; background: var(--surface); border: 1px solid var(--border); border-left-width: 3px; }
+
+  /* ── The tree ── */
+  .canvas { position: relative; overflow: hidden; }
+  #vp { position: absolute; inset: 0; overflow: hidden; touch-action: none; cursor: grab; outline: none; }
+  #vp:active { cursor: grabbing; }
+  #stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  #wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; max-width: none; overflow: visible; pointer-events: none; }
+  #wires path { fill: none; stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; transition: opacity .2s; }
+  #wires path.base { stroke-dasharray: 4 3; }
+  #wires path.marr { stroke: var(--line); }
+  #wires path.on-path { stroke: var(--gold); stroke-width: 2; }
+  .tracing #wires path:not(.on-path) { opacity: .35; }
+
+  .pc {
+    position: absolute; left: 0; top: 0;
+    display: block; padding: 7px 10px 8px; margin: 0; text-align: left;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-left: 2px solid var(--t-unreigned); border-radius: 3px;
+    box-shadow: inset 0 1px 0 var(--hi);
+    font: inherit; cursor: pointer;
+    transition: transform .35s cubic-bezier(.3,.7,.2,1), opacity .2s, box-shadow .2s, border-color .2s;
+  }
+  .pc.sov    { border-left-color: var(--gold-line); }
+  .pc.con    { background: var(--surface-3); border-left-color: var(--line); }
+  .pc.kin    { background: var(--surface-3); }
+  .pc.live   { border-left-color: var(--t-living); }
+  .pc.couch  { border-left-color: var(--t-couchant); }
+  .pc.ramp   { border-left-color: var(--t-rampant); }
+  .pc.chor   { border-left-color: var(--t-chorus); }
+  .pc.base   { border-left-style: dashed; }
+  .pc.gone   { display: none; }
+  .pc.sel    { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 8px 22px -10px rgba(var(--gold-rgb), .55); }
+  .pc.flash  { animation: flash 1.2s ease 2; }
+  @keyframes flash { 50% { box-shadow: 0 0 0 4px rgba(var(--gold-rgb), .55); } }
+  .tracing .pc:not(.on-path) { opacity: .4; }
+  .pc.faded  { opacity: .16; }
+  .tracing .pc.on-path.faded { opacity: .35; }
+  .pc:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  @media (hover: hover) and (pointer: fine) { .pc:hover { border-top-color: var(--line); border-right-color: var(--line); border-bottom-color: var(--line); } }
+
+  .pc .ord { display: block; margin-bottom: 2px; font-family: var(--font-ui); font-size: 10.5px; font-weight: 500; line-height: 1.25; color: var(--maroon); }
+  .pc .nm  { display: block; font-family: var(--font-display); font-size: 15.5px; line-height: 1.2; }
+  .pc.kin .nm { font-size: 14px; color: var(--text); }
+  .pc .epi { display: block; margin-top: 1px; font-family: var(--font-text); font-size: 12.5px; font-style: italic; line-height: 1.25; color: var(--mauve); }
+  .pc .dt  { display: block; margin-top: 3px; font-family: var(--font-ui); font-size: 10.5px; line-height: 1.3; color: var(--text-dim); font-variant-numeric: lining-nums; }
+  .pc .rg  { display: block; margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); font-family: var(--font-ui); font-size: 11px; color: var(--text); }
+  .pc .tag { display: block; margin-top: 3px; font-family: var(--font-text); font-size: 11px; font-style: italic; line-height: 1.3; color: var(--text-ghost); }
+  .pc .ban { display: inline-block; margin-top: 4px; font-family: var(--font-ui); font-size: 10px; font-weight: 500; }
+  .pc .ban.couch { color: var(--t-couchant); } .pc .ban.ramp { color: var(--t-rampant); } .pc .ban.chor { color: var(--t-chorus); }
+  .pc .wed { display: block; font-family: var(--font-ui); font-size: 10px; color: var(--text-ghost); }
+  .pc .cn  { display: block; margin-top: 1px; font-family: var(--font-display); font-size: 14px; line-height: 1.2; color: var(--maroon); }
+  .pc .ch  { display: block; font-family: var(--font-text); font-size: 12px; color: var(--text-dim); }
+
+  .fold {
+    position: absolute; left: 0; top: 0; z-index: 2;
+    min-width: 28px; height: 28px; padding: 0 .5rem; border-radius: 14px;
+    background: var(--surface-2); color: var(--text-dim);
+    border: 1px solid var(--border-hi); font-family: var(--font-ui); font-size: 12px; line-height: 1; cursor: pointer;
+    transition: transform .35s cubic-bezier(.3,.7,.2,1), opacity .2s;
+  }
+  .fold[aria-expanded="false"] { color: var(--gold); border-color: var(--gold-line); }
+  .fold.gone { display: none; }
+  .tracing .fold { opacity: .5; }
+
+  .status {
+    position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 2rem;
+    font-family: var(--font-ui); font-size: 1rem; text-align: center; color: var(--text-dim); pointer-events: none;
+  }
+  .status[hidden] { display: none; }
+
+  /* ── The person panel: a side panel on wide screens, a sheet on phones ── */
+  .panel {
+    position: absolute; z-index: 15; right: 16px; top: 16px;
+    width: min(23rem, calc(100% - 32px)); max-height: calc(100% - 32px);
+    overflow: auto; overscroll-behavior: contain;
+    padding: 1.2rem 1.35rem 1.4rem;
+    background: var(--surface); border: 1px solid var(--border-hi); border-radius: 6px;
+    box-shadow: inset 0 1px 0 var(--hi), 0 20px 44px -20px rgba(0,0,0,.6);
+  }
+  .panel[hidden] { display: none; }
+  .p-close {
+    position: absolute; right: .5rem; top: .5rem; width: 44px; height: 44px;
+    background: none; border: 0; border-radius: 3px; color: var(--text-dim); font-size: 1.5rem; line-height: 1;
+  }
+  .p-close:active { color: var(--text); }
+  .p-ord { margin: 0 2.5rem .2rem 0; font-family: var(--font-ui); font-size: .875rem; font-weight: 500; color: var(--maroon); }
+  .panel h2 { margin: 0 2.5rem 0 0; font-family: var(--font-display); font-weight: 400; font-size: 1.85rem; line-height: 1.1; }
+  .p-epi { margin: .25rem 0 0; font-size: 1.125rem; font-style: italic; color: var(--mauve); }
+  .p-house { margin: .25rem 0 0; font-size: 1.0625rem; color: var(--text-dim); }
+  .panel dl { display: grid; grid-template-columns: max-content 1fr; gap: .55rem 1rem; margin: 1.1rem 0 0; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .panel dt { font-family: var(--font-ui); font-size: .875rem; color: var(--text-ghost); padding-top: .2rem; }
+  .panel dd { margin: 0; font-size: 1.0625rem; line-height: 1.5; }
+  .panel dd .go {
+    display: inline; padding: 0; background: none; border: 0; color: var(--blue); cursor: pointer;
+    font: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .2em;
+  }
+  .panel ul.kids { list-style: none; margin: 0; padding: 0; }
+  .panel ul.kids li + li { margin-top: .15rem; }
+  .p-note { margin: 1rem 0 0; font-size: 1rem; font-style: italic; color: var(--text-dim); }
+  @media (max-width: 40rem) {
+    .panel {
+      left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 58%;
+      border-radius: 12px 12px 0 0; border-bottom: 0;
+      padding-bottom: calc(1.4rem + env(safe-area-inset-bottom));
+    }
+    .panel h2 { font-size: 1.6rem; }
+  }
+  @media (max-width: 40rem) {
+    .tree-head { padding-bottom: .6rem; }
+    .tools {
+      flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+      margin-inline: calc(-1 * var(--pad-l)) calc(-1 * var(--pad-r)); padding-inline: var(--pad-l) var(--pad-r);
+    }
+    .tools::-webkit-scrollbar { display: none; }
+    .tools button { flex-shrink: 0; padding: 0 .7rem; }
+    .tools .sep { display: none; }
+    .yr { font-size: 1.25rem; }
+    #year { flex-basis: 8rem; }
+  }
+</style>
+</head>
+<body class="app">
+<nav class="medir-bar" aria-label="Site">
+  <a class="medir-home" href="index.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>The Mediran Chronicles</a>
+  <button class="medir-toggle" type="button" role="switch" aria-checked="false" aria-label="Dark mode"><span class="track" aria-hidden="true"><span class="knob"><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg><svg class="i-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg></span></span></button>
+</nav>
+
+<header class="tree-head">
+  <div class="th-row">
+    <h1><svg class="sigil" viewBox="0 0 24 24" role="img" aria-label="The Torchbearer: Civilization, Hope, Ambition"><title>The Torchbearer: Civilization, Hope, Ambition</title><path d="M9.4 12.4h5.2l-1.3 8.6h-2.6zM8.8 12.4h6.4"/><path d="M12 2.8c2.6 2.4 3.7 4.6 2.7 6.7-.6 1.2-1.6 1.8-2.7 1.8s-2.1-.6-2.7-1.8C8.3 7.4 9.4 5.2 12 2.8z"/><path d="M12 6.8c.9.9 1.2 1.8.8 2.6-.2.4-.5.6-.8.6s-.6-.2-.8-.6c-.4-.8-.1-1.7.8-2.6z"/></svg>House Caelric: The Full Line</h1>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+      <input id="q" type="search" placeholder="Find a name, epithet or house" autocomplete="off" enterkeyhint="search"
+             role="combobox" aria-label="Find a person" aria-expanded="false" aria-controls="results" aria-autocomplete="list">
+      <ul id="results" role="listbox" aria-label="Matches" hidden></ul>
+    </div>
+  </div>
+  <div class="tools" role="toolbar" aria-label="Tree controls">
+    <button type="button" id="zoomOut" aria-label="Zoom out">&minus;</button>
+    <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+    <button type="button" id="fit">Fit</button>
+    <button type="button" id="reigning" hidden></button>
+    <span class="sep" aria-hidden="true"></span>
+    <button type="button" id="yearToggle" aria-pressed="false" aria-controls="yearbar">Year</button>
+    <button type="button" id="keyToggle" aria-expanded="false" aria-controls="key">Key</button>
+  </div>
+  <div class="yearbar" id="yearbar" hidden>
+    <span class="yr" id="yearLabel" aria-hidden="true"></span>
+    <input type="range" id="year" aria-label="Year">
+    <p class="reigning" id="reigningLabel" aria-live="polite"></p>
+  </div>
+  <ul class="key" id="key" hidden>
+    <li><i style="border-left-color:var(--gold-line)"></i>Sovereign</li>
+    <li><i style="border-left-color:var(--t-unreigned)"></i>Never reigned</li>
+    <li><i style="border-left-color:var(--line);background:var(--surface-3)"></i>Consort</li>
+    <li><i style="border-left-color:var(--t-living)"></i>Living</li>
+    <li><i style="border-left-color:var(--t-couchant)"></i>Couchant</li>
+    <li><i style="border-left-color:var(--t-rampant)"></i>Rampant</li>
+    <li><i style="border-left-color:var(--t-chorus)"></i>Chorus</li>
+    <li><i style="border-left-style:dashed"></i>Baseborn</li>
+  </ul>
+</header>
+
+<div class="canvas">
+  <main id="vp" aria-label="Family tree. Drag to move, pinch or scroll to zoom, select a person for details.">
+    <div id="stage"><svg id="wires" aria-hidden="true"></svg></div>
+  </main>
+  <p class="status" id="status">Loading the house of Caelric…</p>
+  <aside class="panel" id="panel" role="dialog" aria-labelledby="p-name" hidden></aside>
+</div>
+
+<script type="module">
+/* ════════════════════════════════════════════════════════════════
+   House Caelric, the Full Line
+
+   The family lives in caelric.csv (one row per person) next to this
+   page. Edit that file in any spreadsheet and upload it; this page
+   lays the tree out from it. Years before the Unification are
+   negative numbers (29 BU is -29).
+
+   The page reads the CSV with fetch(), which browsers only allow from
+   a web address, so preview changes on GitHub Pages rather than by
+   opening the file from your computer.
+   ════════════════════════════════════════════════════════════════ */
+
+const CURRENT_YEAR = 1473;        // the campaign's present year (AU); ages of the living count from it
+const DATA_URL = 'caelric.csv';
+
+// layout, in pixels at 100% zoom
+const W = { sov: 176, bridge: 176, con: 164, kin: 152 };
+const GAP_M = 16;                 // between a person and their consort
+const GAP_F = 14;                 // between siblings
+const SPINE_L = 194, SPINE_R = 182;   // the central column, measured from the line of descent
+const ROW_GAP = 48;               // between generations of the main line
+const KID_GAP = 44;               // between generations inside a branch
+const BAR = 22;                   // the sibling bar sits this far above the children
+const MARR_Y = 22;                // the marriage line, measured down from the top of the cards
+
+const $ = s => document.querySelector(s);
+const vp = $('#vp'), stage = $('#stage'), wires = $('#wires'), panel = $('#panel'), statusEl = $('#status');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const people = new Map();
+let mainLine = [];
+const folded = new Set();
+let selected = null, current = d3.zoomIdentity, zoom, yearOn = false, foldBtns = new Map();
+
+/* ── Years ────────────────────────────────────────────────────── */
+const fmtYear = y => y < 0 ? `${-y} BU` : `${y} AU`;
+function span(a, b) {           // "29 BU – 71 AU", "12 – 160 AU"
+  if (b == null) return fmtYear(a);
+  if (a < 0 && b >= 0) return `${-a} BU – ${b} AU`;
+  if (a < 0) return `${-a} – ${-b} BU`;
+  return `${a} – ${b} AU`;
+}
+const ageOf = p => p.age != null ? p.age : (p.died != null ? p.died - p.born : CURRENT_YEAR - p.born);
+
+/* ── Data ─────────────────────────────────────────────────────── */
+const num = v => (v == null || String(v).trim() === '') ? null : Number(v);
+const yes = v => /^(yes|y|true|1|x)$/i.test(String(v || '').trim());
+
+async function load() {
+  let text;
+  try {
+    const res = await fetch(DATA_URL, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(res.status);
+    text = await res.text();
+  } catch (e) {
+    statusEl.textContent = location.protocol === 'file:'
+      ? 'This page reads the family from caelric.csv, which browsers only allow when the page is opened from a website. Open it from GitHub Pages to see the tree.'
+      : 'The family data (caelric.csv) couldn’t be loaded. Check that it sits in the same folder as this page.';
+    return false;
+  }
+  const rows = d3.csvParse(text.replace(/^﻿/, ''), r => {
+    const o = {};
+    for (const k in r) o[k.trim().toLowerCase()] = (r[k] || '').trim();
+    return o;
+  });
+  for (const r of rows) {
+    if (!r.id) continue;
+    people.set(r.id, {
+      id: r.id, name: r.name, kind: r.kind || 'family', epithet: r.epithet, ordinal: r.ordinal,
+      mainLine: num(r.main_line), born: num(r.born), died: num(r.died), age: num(r.age),
+      reignStart: num(r.reign_start), reignEnd: num(r.reign_end), reignMonths: r.reign_months,
+      reignNote: r.reign_note, relation: r.relation, parent: r.parent, otherParent: r.other_parent,
+      spouse: r.spouse, house: r.house, wedded: num(r.wedded), banner: r.banner,
+      living: yes(r.living), baseborn: yes(r.baseborn), note: r.note, kids: []
+    });
+  }
+  for (const p of people.values()) {
+    for (const key of ['parent', 'otherParent', 'spouse']) {
+      if (p[key] && !people.has(p[key])) { console.warn(`caelric.csv: ${p.id} names ${key} "${p[key]}", who isn't in the file`); p[key] = ''; }
+    }
+    p.parentP = people.get(p.parent) || null;
+    p.otherP = people.get(p.otherParent) || null;
+    p.spouseP = people.get(p.spouse) || null;
+    if (p.parentP) p.parentP.kids.push(p);
+  }
+  for (const p of people.values()) {
+    if (p.spouseP && !p.spouseP.spouseP) p.spouseP.spouseP = p;
+    p.kids.sort((a, b) => a.born - b.born);
+  }
+  mainLine = [...people.values()].filter(p => p.mainLine != null).sort((a, b) => a.mainLine - b.mainLine);
+  return true;
+}
+
+/* ── Cards ────────────────────────────────────────────────────── */
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const BAN = { Couchant: 'couch', Rampant: 'ramp', Chorus: 'chor' };
+
+function kindOf(p) {
+  if (p.kind === 'consort') return 'con';
+  if (p.reignStart != null) return 'sov';
+  if (p.mainLine != null) return 'bridge';
+  return 'kin';
+}
+function dateLine(p) {
+  if (p.died == null) return `b. ${fmtYear(p.born)}, age ${ageOf(p)}`;
+  return `b. ${span(p.born, p.died)} (${ageOf(p)})`;
+}
+function cardHTML(p) {
+  const k = kindOf(p);
+  if (k === 'con') {
+    return `${p.wedded != null ? `<span class="wed">Wedded ${fmtYear(p.wedded)}</span>` : ''}
+      <span class="cn">${esc(p.name)}</span>${p.house ? `<span class="ch">${esc(p.house)}</span>` : ''}
+      <span class="dt">${dateLine(p)}</span>`;
+  }
+  const reign = p.reignStart != null
+    ? `<span class="rg">r. ${p.reignEnd == null ? `from ${fmtYear(p.reignStart)}` : span(p.reignStart, p.reignEnd)}${p.reignNote ? ` (${esc(p.reignNote)})` : ''}</span>` : '';
+  return `${p.ordinal ? `<span class="ord">${esc(p.ordinal)}</span>` : ''}
+    <span class="nm">${esc(p.name)}</span>${p.epithet ? `<span class="epi">${esc(p.epithet)}</span>` : ''}
+    <span class="dt">${dateLine(p)}</span>${reign}
+    ${p.note && k !== 'sov' ? `<span class="tag">${esc(p.note)}</span>` : ''}
+    ${p.banner ? `<span class="ban ${BAN[p.banner] || ''}">${esc(p.banner)}</span>` : ''}`;
+}
+function makeCards() {
+  for (const p of people.values()) {
+    const el = document.createElement('button');
+    el.type = 'button';
+    const k = kindOf(p);
+    el.className = ['pc', k, p.living && 'live', BAN[p.banner], p.baseborn && 'base'].filter(Boolean).join(' ');
+    el.dataset.id = p.id;
+    el.style.width = W[k] + 'px';
+    el.innerHTML = cardHTML(p);
+    stage.appendChild(el);
+    p.el = el; p.w = W[k];
+  }
+}
+function measure() { for (const p of people.values()) p.h = p.el.offsetHeight; }
+
+/* ── Layout ───────────────────────────────────────────────────────
+   The main line runs straight down the middle, one generation per row,
+   each sovereign or bridge with their consort beside them. Their
+   brothers and sisters flank them, older to the left and younger to the
+   right. A sibling with children of their own carries a small tree
+   beneath them. */
+const hasCouple = p => p.spouseP && p.spouseP.kind === 'consort';
+function coupleExtents(p) {     // distance left and right of the line of descent
+  return hasCouple(p) ? [GAP_M / 2 + p.w, GAP_M / 2 + p.spouseP.w] : [p.w / 2, p.w / 2];
+}
+const coupleH = p => Math.max(p.h, hasCouple(p) ? p.spouseP.h : 0);
+
+function placeCouple(p, ax, y) {
+  if (hasCouple(p)) {
+    p.x = ax - GAP_M / 2 - p.w; p.y = y;
+    p.spouseP.x = ax + GAP_M / 2; p.spouseP.y = y; p.spouseP.shown = true;
+    p.ay = y + MARR_Y;
+  } else {
+    p.x = ax - p.w / 2; p.y = y; p.ay = y + p.h;
+  }
+  p.ax = ax; p.shown = true;
+}
+function measureBranch(p) {
+  const [l, r] = coupleExtents(p);
+  const cw = 2 * Math.max(l, r);
+  const kids = folded.has(p.id) ? [] : p.kids;
+  const ms = kids.map(measureBranch);
+  const kw = ms.reduce((a, m) => a + m.w, 0) + GAP_F * Math.max(0, ms.length - 1);
+  const h = coupleH(p) + (ms.length ? KID_GAP + Math.max(...ms.map(m => m.h)) : 0);
+  return { p, ms, kw, w: Math.max(cw, kw), h };
+}
+function placeBranch(m, x0, y0) {
+  placeCouple(m.p, x0 + m.w / 2, y0);
+  let x = x0 + (m.w - m.kw) / 2;
+  const ky = y0 + coupleH(m.p) + KID_GAP;
+  for (const c of m.ms) { placeBranch(c, x, ky); x += c.w + GAP_F; }
+}
+function layout() {
+  for (const p of people.values()) p.shown = false;
+  let y = 0;
+  mainLine.forEach((s, r) => {
+    placeCouple(s, 0, y);
+    let rowH = coupleH(s);
+    const sibs = r === 0 ? [] : mainLine[r - 1].kids.filter(k => k !== s && k.mainLine == null);
+    const older = sibs.filter(k => k.born < s.born).reverse();     // nearest in age sits nearest the line
+    const younger = sibs.filter(k => k.born >= s.born);
+    let xl = -SPINE_L - GAP_F;
+    for (const k of older) { const m = measureBranch(k); placeBranch(m, xl - m.w, y); xl -= m.w + GAP_F; rowH = Math.max(rowH, m.h); }
+    let xr = SPINE_R + GAP_F;
+    for (const k of younger) { const m = measureBranch(k); placeBranch(m, xr, y); xr += m.w + GAP_F; rowH = Math.max(rowH, m.h); }
+    y += rowH + ROW_GAP;
+  });
+  for (const p of people.values()) {
+    p.el.classList.toggle('gone', !p.shown);
+    if (p.shown) p.el.style.transform = `translate(${p.x}px, ${p.y}px)`;
+  }
+  drawWires();
+  placeFolds();
+}
+
+function drawWires() {
+  const parts = [];
+  for (const p of people.values()) {
+    if (!p.shown) continue;
+    const q = p.parentP;
+    if (q && q.shown) {
+      const top = p.y, bar = top - BAR;
+      parts.push(`<path data-child="${p.id}"${p.baseborn ? ' class="base"' : ''} d="M${q.ax} ${q.ay}V${bar}H${p.ax}V${top}"/>`);
+    }
+    if (hasCouple(p) && p.spouseP.shown) {
+      const x1 = p.x + p.w, x2 = p.spouseP.x, y = p.y + MARR_Y;
+      parts.push(`<path class="marr" d="M${x1} ${y - 2.5}H${x2}M${x1} ${y + 2.5}H${x2}"/>`);
+    }
+  }
+  wires.innerHTML = parts.join('');
+}
+
+/* ── Folding a branch ── */
+function descendants(p) { return p.kids.reduce((n, k) => n + 1 + descendants(k), 0); }
+function makeFolds() {
+  for (const p of people.values()) {
+    if (p.mainLine != null || !p.kids.length) continue;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'fold'; b.dataset.fold = p.id;
+    stage.appendChild(b); foldBtns.set(p.id, b);
+  }
+}
+function placeFolds() {
+  for (const [id, b] of foldBtns) {
+    const p = people.get(id), open = !folded.has(id);
+    b.classList.toggle('gone', !p.shown);
+    b.setAttribute('aria-expanded', String(open));
+    b.setAttribute('aria-label', `${open ? 'Fold' : 'Unfold'} the line of ${p.name}`);
+    b.textContent = open ? '−' : `+${descendants(p)}`;
+    if (p.shown) b.style.transform = `translate(${p.ax - 14}px, ${p.y + coupleH(p) + 6}px)`;
+  }
+}
+
+/* ── Zoom and movement ────────────────────────────────────────── */
+function bounds() {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of people.values()) if (p.shown) {
+    x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x + p.w); y1 = Math.max(y1, p.y + p.h);
+  }
+  return { x0, y0, x1, y1 };
+}
+function setupZoom() {
+  zoom = d3.zoom().scaleExtent([0.1, 2.5])
+    .filter(e => (!e.ctrlKey || e.type === 'wheel') && !e.button && !e.target.closest('.fold'))
+    .on('zoom', e => {
+      current = e.transform;
+      stage.style.transform = `translate(${current.x}px, ${current.y}px) scale(${current.k})`;
+    });
+  d3.select(vp).call(zoom);
+}
+function go(t, ms = 650) {
+  const sel = d3.select(vp);
+  if (reduceMotion || ms === 0) sel.call(zoom.transform, t);
+  else sel.transition().duration(ms).ease(d3.easeCubicInOut).call(zoom.transform, t);
+}
+function zoomBy(f) {
+  const r = vp.getBoundingClientRect();
+  const t = current, k = Math.max(0.1, Math.min(2.5, t.k * f));
+  const cx = r.width / 2, cy = r.height / 2;
+  go(d3.zoomIdentity.translate(cx - (cx - t.x) * k / t.k, cy - (cy - t.y) * k / t.k).scale(k), 250);
+}
+function fit(ms) {
+  const b = bounds(), r = vp.getBoundingClientRect();
+  const k = Math.max(0.1, Math.min(1, (r.width - 32) / (b.x1 - b.x0)));
+  go(d3.zoomIdentity.translate((r.width - (b.x1 - b.x0) * k) / 2 - b.x0 * k, 16 - b.y0 * k).scale(k), ms);
+}
+function openingView() {
+  const r = vp.getBoundingClientRect();
+  const k = Math.min(1, (r.width - 24) / (SPINE_L + SPINE_R));
+  go(d3.zoomIdentity.translate(r.width / 2, 24).scale(k), 0);
+}
+// the part of the canvas not covered by the panel
+function clearArea() {
+  const r = vp.getBoundingClientRect();
+  if (panel.hidden) return { x: 0, y: 0, w: r.width, h: r.height };
+  const pr = panel.getBoundingClientRect();
+  if (pr.width >= r.width - 40) return { x: 0, y: 0, w: r.width, h: pr.top - r.top };      // sheet at the bottom
+  return { x: 0, y: 0, w: pr.left - r.left, h: r.height };                                   // panel at the side
+}
+function centreOn(p, { minScale = 0, ms = 650, onlyIfHidden = false } = {}) {
+  const a = clearArea();
+  const k = Math.max(current.k, minScale);
+  const sx = current.x + p.x * current.k, sy = current.y + p.y * current.k;
+  if (onlyIfHidden && k === current.k && sx >= a.x + 8 && sy >= a.y + 8 &&
+      sx + p.w * k <= a.x + a.w - 8 && sy + p.h * k <= a.y + a.h - 8) return;
+  const cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+  go(d3.zoomIdentity.translate(a.x + a.w / 2 - cx * k, a.y + a.h * 0.42 - cy * k).scale(k), ms);
+}
+
+/* ── Choosing a person ────────────────────────────────────────── */
+function bloodline(p) {            // p's line back to Orrin I; a consort traces through their spouse
+  const chain = [];
+  let q = (p.kind === 'consort' && p.spouseP) ? p.spouseP : p;
+  while (q) { chain.push(q); q = q.parentP; }
+  return chain;
+}
+function select(id, { fly = 'ifHidden', flash = false } = {}) {
+  const p = people.get(id);
+  if (!p) return;
+  // make sure the person is on the canvas
+  let q = p.kind === 'consort' ? p.spouseP : p.parentP, unfolded = false;
+  while (q) { if (folded.delete(q.id)) unfolded = true; q = q.parentP; }
+  if (unfolded) layout();
+
+  if (selected) selected.el.classList.remove('sel');
+  selected = p;
+  p.el.classList.add('sel');
+  const chain = bloodline(p), onPath = new Set(chain.map(c => c.id));
+  onPath.add(p.id); if (p.spouseP) onPath.add(p.spouseP.id);
+  for (const r of people.values()) r.el.classList.toggle('on-path', onPath.has(r.id));
+  for (const w of wires.querySelectorAll('[data-child]')) {
+    const c = people.get(w.dataset.child);
+    w.classList.toggle('on-path', chain.includes(c) && chain.includes(c.parentP));
+  }
+  document.body.classList.add('tracing');
+  openPanel(p);
+  if (history.replaceState) history.replaceState(null, '', '#' + p.id);
+  if (fly === 'always') centreOn(p, { minScale: 0.9 });
+  else if (fly === 'ifHidden') centreOn(p, { onlyIfHidden: true, ms: 400 });
+  if (flash) { p.el.classList.remove('flash'); void p.el.offsetWidth; p.el.classList.add('flash'); }
+}
+function clearSelection() {
+  if (!selected) return;
+  selected.el.classList.remove('sel');
+  selected = null;
+  document.body.classList.remove('tracing');
+  for (const w of wires.querySelectorAll('.on-path')) w.classList.remove('on-path');
+  panel.hidden = true;
+  if (history.replaceState) history.replaceState(null, '', location.pathname + location.search);
+}
+
+const link = p => `<button type="button" class="go" data-go="${p.id}">${esc(p.name)}</button>`;
+function openPanel(p) {
+  const rows = [];
+  if (p.reignStart != null) {
+    let reign = p.reignMonths || (p.reignEnd == null ? `from ${fmtYear(p.reignStart)}` : span(p.reignStart, p.reignEnd));
+    if (p.reignEnd == null && p.reignMonths && !/–\s*\S/.test(p.reignMonths)) reign += ' to the present';
+    rows.push(['Reigned', esc(reign) + (p.reignNote ? `, ${esc(p.reignNote)}` : '')]);
+  }
+  if (p.relation) rows.push(['Relation', esc(p.relation)]);
+  rows.push(['Born', fmtYear(p.born)]);
+  rows.push(p.died == null ? ['Living', `aged ${ageOf(p)}`] : ['Died', `${fmtYear(p.died)}, aged ${ageOf(p)}`]);
+  if (p.spouseP) rows.push([p.kind === 'consort' ? 'Consort of' : 'Wedded',
+    link(p.spouseP) + (p.spouseP.kind === 'consort' && p.spouseP.house ? `, ${esc(p.spouseP.house)}` : '') +
+    (p.wedded != null ? ` in ${fmtYear(p.wedded)}` : '')]);
+  const parents = [p.parentP, p.otherP].filter(Boolean);
+  if (parents.length) rows.push(['Parents', parents.map(link).join(' and ')]);
+  const kids = p.kind === 'consort' && p.spouseP ? p.spouseP.kids.filter(k => k.otherP === p) : p.kids;
+  if (kids.length) rows.push(['Children', `<ul class="kids">${kids.map(k => `<li>${link(k)}</li>`).join('')}</ul>`]);
+  if (p.banner) rows.push(['Banner', esc(p.banner)]);
+  if (p.baseborn) rows.push(['Birth', 'Baseborn']);
+
+  panel.innerHTML = `
+    <button type="button" class="p-close" aria-label="Close">&times;</button>
+    ${p.ordinal ? `<p class="p-ord">${esc(p.ordinal)}</p>` : ''}
+    <h2 id="p-name">${esc(p.name)}</h2>
+    ${p.epithet ? `<p class="p-epi">${esc(p.epithet)}</p>` : ''}
+    ${p.kind === 'consort' && p.house ? `<p class="p-house">${esc(p.house)}</p>` : ''}
+    <dl>${rows.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join('')}</dl>
+    ${p.note ? `<p class="p-note">${esc(p.note)}</p>` : ''}`;
+  panel.hidden = false;
+  panel.scrollTop = 0;
+}
+
+/* ── Search ───────────────────────────────────────────────────── */
+const q = $('#q'), results = $('#results');
+const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+let hits = [], active = -1;
+function runSearch() {
+  const t = fold(q.value.trim());
+  if (!t) { closeResults(); return; }
+  hits = [...people.values()].filter(p => [p.name, p.epithet, p.house, p.ordinal].some(f => fold(f).includes(t)))
+    .sort((a, b) => (fold(a.name).startsWith(t) ? 0 : 1) - (fold(b.name).startsWith(t) ? 0 : 1) || a.born - b.born)
+    .slice(0, 10);
+  active = hits.length ? 0 : -1;
+  results.innerHTML = hits.length
+    ? hits.map((p, i) => `<li role="option" id="opt-${i}" data-go="${p.id}" aria-selected="${i === active}">
+        <span class="r-name">${esc(p.name)}</span>
+        <span class="r-sub">${esc([p.epithet, p.kind === 'consort' ? p.house : '', p.died == null ? `b. ${fmtYear(p.born)}` : span(p.born, p.died)].filter(Boolean).join(', '))}</span></li>`).join('')
+    : `<li class="r-none" role="option" aria-disabled="true">No one by that name</li>`;
+  results.hidden = false; q.setAttribute('aria-expanded', 'true');
+  q.setAttribute('aria-activedescendant', active >= 0 ? `opt-${active}` : '');
+}
+function closeResults() { results.hidden = true; q.setAttribute('aria-expanded', 'false'); q.removeAttribute('aria-activedescendant'); }
+function pick(id) { closeResults(); q.blur(); select(id, { fly: 'always', flash: true }); }
+q.addEventListener('input', runSearch);
+q.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (!hits.length) return;
+    e.preventDefault();
+    active = (active + (e.key === 'ArrowDown' ? 1 : -1) + hits.length) % hits.length;
+    results.querySelectorAll('[role=option]').forEach((li, i) => li.setAttribute('aria-selected', String(i === active)));
+    q.setAttribute('aria-activedescendant', `opt-${active}`);
+    results.querySelector(`#opt-${active}`)?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    if (active >= 0 && hits[active]) { e.preventDefault(); pick(hits[active].id); }
+  } else if (e.key === 'Escape') { closeResults(); }
+});
+results.addEventListener('pointerdown', e => e.preventDefault());   // keep focus in the box while choosing
+results.addEventListener('click', e => { const li = e.target.closest('[data-go]'); if (li) pick(li.dataset.go); });
+q.addEventListener('blur', () => setTimeout(closeResults, 120));
+
+/* ── A year in the house's history ────────────────────────────── */
+const yearInput = $('#year'), yearLabel = $('#yearLabel'), reigningLabel = $('#reigningLabel');
+function applyYear() {
+  const y = Number(yearInput.value);
+  yearLabel.textContent = fmtYear(y);
+  for (const p of people.values()) {
+    const alive = p.born <= y && (p.died == null || p.died >= y);
+    p.el.classList.toggle('faded', yearOn && !alive);
+  }
+  const rulers = [...people.values()].filter(p => p.reignStart != null && p.reignStart <= y && (p.reignEnd == null || y < p.reignEnd));
+  reigningLabel.textContent = rulers.length
+    ? `${rulers.map(p => p.name + (p.epithet ? ', ' + p.epithet : '')).join(' and ')} on the throne`
+    : (y < 1 ? 'Before the Unification' : 'No sovereign on the throne');
+}
+$('#yearToggle').addEventListener('click', e => {
+  yearOn = !yearOn;
+  e.currentTarget.setAttribute('aria-pressed', String(yearOn));
+  $('#yearbar').hidden = !yearOn;
+  applyYear();
+});
+yearInput.addEventListener('input', applyYear);
+
+/* ── Wiring up ────────────────────────────────────────────────── */
+$('#keyToggle').addEventListener('click', e => {
+  const open = e.currentTarget.getAttribute('aria-expanded') !== 'true';
+  e.currentTarget.setAttribute('aria-expanded', String(open));
+  $('#key').hidden = !open;
+});
+$('#zoomIn').addEventListener('click', () => zoomBy(1.35));
+$('#zoomOut').addEventListener('click', () => zoomBy(1 / 1.35));
+$('#fit').addEventListener('click', () => fit());
+
+stage.addEventListener('click', e => {
+  const f = e.target.closest('.fold');
+  if (f) {
+    const id = f.dataset.fold;
+    folded.has(id) ? folded.delete(id) : folded.add(id);
+    if (selected && !folded.has(id)) { /* keep selection */ }
+    layout();
+    return;
+  }
+  const c = e.target.closest('.pc');
+  if (c) select(c.dataset.id);
+});
+vp.addEventListener('click', e => { if (!e.target.closest('.pc, .fold')) clearSelection(); });
+stage.addEventListener('focusin', e => {
+  const c = e.target.closest('.pc');
+  if (c && c.matches(':focus-visible')) centreOn(people.get(c.dataset.id), { onlyIfHidden: true, ms: 300 });
+});
+panel.addEventListener('click', e => {
+  if (e.target.closest('.p-close')) { clearSelection(); return; }
+  const g = e.target.closest('[data-go]');
+  if (g) select(g.dataset.go, { fly: 'always', flash: true });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && selected && document.activeElement !== q) clearSelection();
+});
+addEventListener('hashchange', () => { const id = decodeURIComponent(location.hash.slice(1)); if (people.has(id)) select(id, { fly: 'always', flash: true }); });
+
+(async function start() {
+  if (!window.d3) {
+    statusEl.textContent = 'The tree’s drawing library didn’t load. Check the connection and reload the page.';
+    return;
+  }
+  if (!(await load())) return;
+  makeCards(); makeFolds();
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  measure(); layout(); setupZoom();
+  statusEl.hidden = true;
+
+  const ruler = mainLine.find(p => p.reignStart != null && p.reignEnd == null) ||
+                [...people.values()].find(p => p.reignStart != null && p.reignEnd == null);
+  if (ruler) {
+    const b = $('#reigning');
+    b.hidden = false;
+    b.textContent = ruler.name.startsWith('Queen') ? ruler.name : `King ${ruler.name}`;
+    b.setAttribute('aria-label', `Go to ${b.textContent}`);
+    b.addEventListener('click', () => select(ruler.id, { fly: 'always', flash: true }));
+  }
+  const years = [...people.values()].map(p => p.born).filter(y => y != null);
+  yearInput.min = Math.min(...years); yearInput.max = CURRENT_YEAR; yearInput.value = CURRENT_YEAR; applyYear();
+
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (people.has(id)) { openingView(); select(id, { fly: 'always', flash: true }); }
+  else openingView();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#eceef1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#08090f" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Blend a festival tea or commission a jade carving from the two Jade Province stalls.">
+<title>Tea &amp; Jade – The Mediran Chronicles</title>
+<script src="theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300..600&family=Marcellus&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="medir.css">
+<style>
+  .wrap {
+    position: relative; z-index: 1;
+    max-width: var(--page-w); margin: 0 auto;
+    padding: 0 var(--pad-r) calc(7rem + env(safe-area-inset-bottom)) var(--pad-l);
+  }
+  /* the stall in front of you sets the accent: rust for tea, jade for carving */
+  #root { --pick: var(--maroon); }
+  #root.jade-mode { --pick: var(--jade); }
+
+  /* ── Stall switch: a channel in the stone with a raised block that slides between stalls ── */
+  .tabs {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+    margin-bottom: 2rem; padding: 4px;
+    background: var(--well-fill); border-radius: calc(var(--r-ctl) + 4px); box-shadow: var(--well-shadow);
+  }
+  .tab {
+    min-height: 50px; padding: .4rem .75rem;
+    background: transparent; border: 1px solid transparent; border-radius: var(--r-ctl);
+    font-family: var(--font-display); font-size: 1.1875rem; color: var(--text-dim);
+  }
+  .tab.on { background: var(--btn-fill); border-color: var(--slab-edge); box-shadow: var(--btn-shadow); color: var(--gold); }
+  @media (hover: hover) and (pointer: fine) { .tab:not(.on):hover { color: var(--text); } }
+
+  .intro { margin: 0 0 .9rem; max-width: 40rem; font-size: 1.1875rem; line-height: 1.6; color: var(--text); }
+
+  /* ── Steps ── */
+  .step-head h2 {
+    margin: 2.5rem 0 .3rem;
+    font-family: var(--font-display); font-weight: 400;
+    font-size: 1.625rem; line-height: 1.2; letter-spacing: .005em; color: var(--text); text-shadow: var(--carve);
+  }
+  .step-note { margin: 0 0 1rem; font-size: 1.0625rem; font-style: italic; line-height: 1.5; color: var(--text-dim); }
+  .step-num { font-family: var(--font-ui); font-style: normal; font-weight: 500; font-size: .9375rem; color: var(--pick); }
+
+  .opt {
+    display: block; width: 100%; margin-bottom: .7rem; padding: 1rem 1.2rem 1.05rem;
+    text-align: left; color: inherit;
+    background: var(--slab-fill); border: 1px solid var(--slab-edge); border-radius: var(--r-card); box-shadow: var(--slab-shadow);
+    transition: box-shadow .15s, transform .15s;
+  }
+  .opt:active { transform: translateY(1px); box-shadow: var(--btn-press); }
+  /* chosen: pressed into the stone, edged in the stall's color */
+  .opt.on { background: var(--well-fill); border-color: var(--gold-edge); box-shadow: var(--well-shadow), inset 0 0 0 1px var(--gold-edge); }
+  @media (hover: hover) and (pointer: fine) { .opt:not(.on):hover { box-shadow: var(--slab-lift); transform: translateY(-1px); } }
+
+  .opt-top { display: flex; align-items: baseline; gap: .75rem; }
+  .opt-name { flex: 1; font-family: var(--font-display); font-size: 1.3125rem; color: var(--text); }
+  .opt-cost { flex-shrink: 0; font-family: var(--font-ui); font-size: .9375rem; font-weight: 500; color: var(--token); white-space: nowrap; font-variant-numeric: lining-nums tabular-nums; }
+  .opt-flavor { margin-top: .35rem; font-size: 1.0625rem; line-height: 1.55; color: var(--text-dim); }
+
+  /* ── Result ── */
+  .reveal {
+    margin-top: 2.5rem; padding: 1.5rem 1.5rem 1.6rem;
+    background: var(--well-fill); border-radius: var(--r-card); box-shadow: var(--well-shadow);
+  }
+  .reveal.done { background: var(--slab-fill); border: 1px solid var(--slab-edge); box-shadow: var(--slab-lift); }
+  .reveal-label { margin-bottom: .4rem; font-family: var(--font-ui); font-size: .9375rem; font-weight: 500; color: var(--pick); }
+  .sealed { margin: 0; font-size: 1.125rem; font-style: italic; line-height: 1.6; color: var(--text-dim); }
+  .sealed b { font-style: normal; font-weight: 600; color: var(--text); }
+
+  .item-name {
+    font-family: var(--font-display); font-weight: 400;
+    font-size: 1.875rem; line-height: 1.15; letter-spacing: .005em; color: var(--text);
+  }
+  .item-price { margin-top: .4rem; font-family: var(--font-ui); font-size: 1rem; font-weight: 500; color: var(--token); }
+  .att-badge { margin-top: .6rem; }
+  .item-rules { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--groove-dark); box-shadow: inset 0 1px 0 var(--groove-light); }
+  .rule { margin-bottom: .75rem; max-width: 44rem; font-size: 1.1875rem; line-height: 1.6; }
+  .rule:last-child { margin-bottom: 0; }
+  .rule b { display: block; font-weight: 600; font-style: italic; color: var(--pick); }
+  .caveat { margin: 1.1rem 0 0; padding-top: 1rem; border-top: 1px solid var(--groove-dark); box-shadow: inset 0 1px 0 var(--groove-light); font-size: 1.0625rem; font-style: italic; line-height: 1.55; color: var(--text-dim); }
+
+  .reset {
+    width: 100%; min-height: 50px; margin-top: 1.2rem;
+    background: var(--btn-fill); border: 1px solid var(--slab-edge); border-radius: var(--r-ctl); box-shadow: var(--btn-shadow);
+    font-family: var(--font-ui); font-size: 1rem; font-weight: 500; color: var(--text-dim);
+  }
+  .reset:active { box-shadow: var(--btn-press); transform: translateY(1px); }
+
+  /* ── Running total ── */
+  .tally {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    display: flex; align-items: center; gap: .75rem;
+    padding: .85rem var(--bar-inline) calc(.85rem + env(safe-area-inset-bottom));
+    background: var(--bar-bg); border-top: 1px solid var(--slab-edge);
+    box-shadow: inset 0 1px 0 var(--groove-light), 0 -8px 20px -12px rgba(0,0,0,.35);
+    font-family: var(--font-ui);
+  }
+  .tally-steps { flex: 1; min-width: 0; font-size: 1rem; font-weight: 500; color: var(--text-dim); }
+  .tally-cost { font-size: 1.125rem; font-weight: 500; color: var(--token); white-space: nowrap; font-variant-numeric: lining-nums tabular-nums; }
+</style>
+</head>
+<body style="--page-w:46rem">
+<nav class="medir-bar" aria-label="Site">
+  <a class="medir-home" href="index.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>The Mediran Chronicles</a>
+  <button class="medir-toggle" type="button" role="switch" aria-checked="false" aria-label="Dark mode"><span class="track" aria-hidden="true"><span class="knob"><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg><svg class="i-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg></span></span></button>
+</nav>
+
+<div class="wrap" id="root">
+  <header class="page-head">
+    <div class="page-mark"><svg class="sigil" viewBox="0 0 24 24" role="img" aria-label="The Reveler: Festivals, Indulgence, Luck"><title>The Reveler: Festivals, Indulgence, Luck</title><path d="M7.2 3.6C5.2 5.6 5.6 8 7.6 9.4c1.5 1.1 1.6 2.9.7 5.4L7.4 19.6h9.2l-.9-4.8c-.9-2.5-.8-4.3.7-5.4 2-1.4 2.4-3.8.4-5.8M7.4 8.2h9.2M10 8.2v11.4M12 8.2v11.4M14 8.2v11.4"/></svg></div>
+    <h1 class="page-title">Tea &amp; Jade</h1>
+    <p class="page-sub">Two stalls out of the Jade Provinces.</p>
+  </header>
+
+  <div class="tabs" role="group" aria-label="Choose a stall">
+    <button class="tab on" data-tab="tea">Festival Tea</button>
+    <button class="tab" data-tab="jade">Jade Carving</button>
+  </div>
+
+  <main id="panel"></main>
+</div>
+
+<div class="tally" id="tally">
+  <span class="tally-steps" id="tallySteps"></span>
+  <span class="tally-cost" id="tallyCost">0 tokens</span>
+</div>
+
+<script>
+/* ────────────────────────────────────────────────────────────────
+   Flavor is what the stall tells you. The mechanics stay sealed in
+   COMPOSE until every component has been chosen.
+   ──────────────────────────────────────────────────────────────── */
+
+const TEA = {
+  mode:"tea",
+  intro:[
+    "The tea stall stands under a striped awning at the edge of the festival ground, three iron kettles going at once. The keeper will not sell a single cup. Choose a base, a botanical, and a herb, and she measures out enough for three brewings."
+  ],
+  steps:[
+    { key:"base", label:"Tea Base", num:"Step 1",
+      note:"Ground, steeped, or roasted. The base decides how long the tea stays in your system.",
+      opts:[
+        { id:"matcha", name:"Matcha", cost:0,
+          f:"A stone-ground powder of early-season tea leaves, finer than flour, whisked into hot water until it takes a froth. The oils flatten within minutes of the whisking, so it is best drunk soon after." },
+        { id:"sencha", name:"Sencha", cost:1,
+          f:"First-flush leaf steamed and dried whole, the tea most households keep on the shelf. It gives its flavor up steadily instead of all at once, which is why it is what people carry for a day's work." },
+        { id:"hojicha", name:"Hojicha", cost:2,
+          f:"Leaf roasted over charcoal until it turns red-brown and kept in sealed tins. Temple kitchens brew it for the long ceremonies, since the roast holds its flavor past the point where lighter teas have given out." }
+      ]},
+    { key:"bot", label:"Botanical Addition", num:"Step 2",
+      note:"What the physicians of the provinces prescribe it for.",
+      opts:[
+        { id:"pine", name:"Pine Needle", cost:1,
+          f:"Needles clipped short and dried in bundles. The hill villages above the Hyōkei terraces boil them for dock-hands and stone-haulers, and the same resin is rendered into the skins of the Earth Day drums to improve their resonance." },
+        { id:"chrys", name:"Chrysanthemum", cost:1,
+          f:"Flower heads dried whole and kept in paper. Grown in the archive gardens at Iwayama and pressed for scribes working past the lamp hour; the physicians there also prescribe it to sleepers troubled by persistent dreams and visions." },
+        { id:"plum", name:"Plum Blossom", cost:1,
+          f:"Blossoms picked before they open and dried on trays. Steeped for singers, diplomats, and the smitten. It must be stored carefully, or the blossoms begin to eat the glaze from the container." },
+        { id:"yuzu", name:"Yuzu Peel", cost:2,
+          f:"Peel cut in strips and dried on lines above the kitchen. Given to dancers before a performance, and a favorite of watchmakers. The first sip sets the teeth on edge, sharp enough to shock those unused to it." },
+        { id:"ginger", name:"Ginger", cost:2,
+          f:"Root sliced thin and dried hard. The standing cure for a sailor's cough, and often brewed for company through a long watch in cold weather. It wakes the senses as it goes down, and there are those who hold the burning to be a small enlightenment." },
+        { id:"shiso", name:"Shiso", cost:3,
+          f:"A broad leaf dried flat between boards, grown on the Godōin terraces and cut by the temple's own hands. Godomichi monks take it to wake and steel the mind, the body, and the senses." }
+      ]},
+    { key:"herb", label:"Magical Herb", num:"Step 3",
+      note:"The working part. The stall keeps these in a locked tin.",
+      opts:[
+        { id:"catseye", name:"Catseye Leaf", cost:1,
+          f:"A low creeping leaf with a pale slit down its center. Herbalists give it to apprentices before any work that has to be done well the first time, since it sharpens whatever the drinker is already capable of." },
+        { id:"ironheart", name:"Ironheart Root", cost:1,
+          f:"Cut from a root that splits stone as it grows. Taken by anyone expecting to be worked upon, whether by poison, by weather, or by a persuasive stranger, since it stiffens the drinker against what would otherwise take hold." },
+        { id:"ward", name:"Ward Moss", cost:2,
+          f:"Scraped from the north faces of shrine stones, where it grows thick enough to take the force out of a hammer stroke. On the stone it is a deep green cushion; dried for sale it shrinks to grey flakes no heavier than ash." },
+        { id:"thorn", name:"Rousing Thorn", cost:3,
+          f:"A black thorn cut from the briars along the old volcanic flows above Jinzaikei. It has to be boiled twice and the water thrown out both times, since a careless preparation makes a poison rather than a tea." }
+      ]}
+  ]
+};
+
+const JADE = {
+  mode:"jade",
+  intro:[
+    "The carving stalls run in a row along the festival's eastern edge, each bench under its own oil lamp, each carver working stone brought down from a different seam. A charm is cut to order: a motif, a color of jade, a grade of stone, and a cord to hang it from.",
+    "The carvers will say what each stone and each motif is associated with. They will not tell you what the finished charm does. That, they say, is between the stone and whoever wears it."
+  ],
+  steps:[
+    { key:"motif", label:"Carved Motif", num:"Step 1",
+      note:"Cut into the face of the stone. The motif is what the charm is for.",
+      opts:[
+        { id:"eye", name:"Open Eye", cost:2,
+          f:"An eye cut open and lidless, the pupil drilled a hair deeper than the rest of the carving. One of the two motifs an apprentice learns first, and worn to sharpen whatever the wearer sets a hand to." },
+        { id:"gate", name:"Standing Gate", cost:2,
+          f:"A shrine gate in miniature: two posts and a crossbeam no thicker than a fingernail. The other motif every apprentice learns first, worn to hold the wearer's resolve steady against whatever works on it." },
+        { id:"paw", name:"Sheltering Paw", cost:3,
+          f:"A broad paw laid flat over a smaller figure curled beneath it. The most widely bought sign on the bench, worn by parents and hired bodyguards alike for what it turns aside." },
+        { id:"carp", name:"Leaping Carp", cost:4,
+          f:"An intricately carved carp mid-leap against a fall of water, the scales cut one by one and the water worked so that it looks ready to resume flowing at any moment. The provinces hold that the only difference between a carp at the top of the falls and one on the rocks below is the will to try once more." }
+      ]},
+    { key:"color", label:"Jade Color", num:"Step 2",
+      note:"Every seam in the provinces carries its own associations.",
+      opts:[
+        { id:"russet", name:"Russet Jade", cost:1,
+          f:"Quarried from the volcanic slopes above Jinzaikei, where it is associated with the Torakei oath-stones and the strength to keep them. A sound piece rings when struck, and the quarry crews sort the stone by ear rather than by eye." },
+        { id:"black", name:"Black Jade", cost:1,
+          f:"Cut from the deep seams the Kurōyokei work, where it is associated with memory and with what a mind keeps to itself. Scribes' seals are made from it, and the Kurōyokei hold that a seal of black jade cannot be read by anyone it was not meant for." },
+        { id:"lavender", name:"Lavender Jade", cost:1,
+          f:"Cut from seams at the edge of the sugar swamps, where it is associated with a sweetened tongue and worn by envoys before a bargain. The sweetness runs past its bounds at times, and a piece left in contact with lesser material too long will eat into it." },
+        { id:"palegreen", name:"Pale-Green Jade", cost:2,
+          f:"Worked in the Unaikei shops at Kazeyama, where it is associated with the speed the clan's couriers are known for. If you hold it and focus, it almost feels as if the stone itself is vibrating with barely contained energy." },
+        { id:"white", name:"White Jade", cost:2,
+          f:"Gathered from the high scree on Shirogane, where it is associated with endurance and with the dawn. Masters meditate for long hours in the sun wearing these, and the stones are said to catch light and sparkle more readily than other varieties." },
+        { id:"deepgreen", name:"Deep-Green Jade", cost:3,
+          f:"No carver in the islands will say where it is cut. It is associated with enlightenment of the body, the mind, and the senses together, and is held to sharpen and to shield each of them in equal measure." }
+      ]},
+    { key:"quality", label:"Jade Quality", num:"Step 3",
+      note:"The grade of the stone, which decides how often the charm answers.",
+      opts:[
+        { id:"clouded", name:"Clouded", cost:1,
+          f:"A milky, veined specimen, easily come by and powerful in its own right, though it takes its time rebuilding what it spends." },
+        { id:"clear", name:"Clear", cost:3,
+          f:"Even in color throughout, with very few inclusions. This grade is given as a gift to mark the important moments of a life." },
+        { id:"flawless", name:"Flawless", cost:7,
+          f:"No lamp finds a single flaw anywhere in the stone. It is the grade the affluent of the islands will carry, though it is said that truly understanding such a stone means becoming one with it." }
+      ]},
+    { key:"cord", label:"Cord", num:"Step 4",
+      note:"Braided at the next bench over, and it decides how far the charm reaches.",
+      opts:[
+        { id:"hemp", name:"Hemp Cord", cost:0,
+          f:"Plain twisted hemp, easy to mend and easier to replace whenever it frays." },
+        { id:"silk", name:"Silk Cord", cost:2,
+          f:"Dyed silk braided by the cord-makers' guild. It draws out the natural qualities of the jade and carries its working to whoever is standing close." },
+        { id:"gold", name:"Gold-Thread Cord", cost:3,
+          f:"The finest silk wound with drawn gold, sold by the finger-length. Leaders favor it, since it is said to lend heart to everyone within its reach." }
+      ]}
+  ]
+};
+
+/* ── Sealed mechanics ── */
+const ABIL = { pine:"Strength", chrys:"Intelligence", plum:"Charisma", yuzu:"Dexterity", ginger:"Constitution", shiso:"Wisdom",
+               russet:"Strength", black:"Intelligence", lavender:"Charisma", palegreen:"Dexterity", white:"Constitution", deepgreen:"Wisdom" };
+const DMG  = { pine:"Thunder", chrys:"Psychic", plum:"Acid", yuzu:"Lightning", ginger:"Radiant", shiso:"Force",
+               russet:"Thunder", black:"Psychic", lavender:"Acid", palegreen:"Lightning", white:"Radiant", deepgreen:"Force" };
+
+const BASE_NAME = { matcha:"Matcha", sencha:"Sencha", hojicha:"Hojicha" };
+
+function teaRules(s) {
+  const a = ABIL[s.bot], d = DMG[s.bot], b = s.base;
+  const out = [];
+  if (s.herb === "catseye" || s.herb === "ironheart") {
+    const many = s.herb === "catseye" ? a + " checks" : a + " saving throws";
+    const one  = s.herb === "catseye" ? a + " check"  : a + " saving throw";
+    out.push({ h:"Effect", t:
+      b === "matcha"  ? "You gain a +1 bonus to the next " + one + " you make within the next hour." :
+      b === "sencha"  ? "You gain a +1 bonus to " + many + " for 1 hour." :
+                        "You gain a +1 bonus to " + many + " until you finish a Long Rest." });
+  }
+  if (s.herb === "ward") {
+    out.push({ h:"Effect", t:
+      b === "matcha"  ? "You have Resistance to the next " + d + " damage you take within the next hour." :
+      b === "sencha"  ? "You have Resistance to " + d + " damage for 1 hour." :
+                        "You have Resistance to " + d + " damage until you finish a Long Rest." });
+  }
+  if (s.herb === "thorn") {
+    out.push({ h:"Effect", t:
+      b === "matcha"  ? "The next time you deal damage within the next hour, one creature that took that damage takes an extra 3d6 " + d + " damage." :
+      b === "sencha"  ? "Once on each of your turns when you deal damage with an attack or a spell, one creature that took that damage takes an extra 1d6 " + d + " damage. This effect lasts for 1 hour." :
+                        "Once on each of your turns when you deal damage with an attack or a spell, one creature that took that damage takes an extra 1d6 " + d + " damage. This effect lasts until the next dawn." });
+    out.push({ h:"Limit", t:"The extra damage applies to only one creature per turn, no matter how many attacks you make or how many creatures your spell affects." });
+  }
+  return out;
+}
+
+function teaName(s) {
+  const bot  = TEA.steps[1].opts.find(o => o.id === s.bot).name;
+  const herb = TEA.steps[2].opts.find(o => o.id === s.herb).name;
+  return BASE_NAME[s.base] + " with " + bot + " and " + herb;
+}
+
+const RECIP = {
+  hemp: "you",
+  silk: "you or a creature you can see within 15 feet of you",
+  gold: "you or a creature you can see within 30 feet of you"
+};
+
+function jadeRules(s) {
+  const a = ABIL[s.color], d = DMG[s.color], who = RECIP[s.cord], out = [];
+  const an = /^[AEIOU]/.test(a) ? "an " : "a ";
+  if (s.motif === "eye")
+    out.push({ h:"Effect", t:"When " + who + " makes " + an + a + " check, you can expend a use of the charm to add 1d4 to the roll. You can do so after the d20 is rolled but before you learn whether the check succeeded." });
+  if (s.motif === "gate")
+    out.push({ h:"Effect", t:"When " + who + " makes " + an + a + " saving throw, you can expend a use of the charm to add 1d4 to the roll. You can do so after the d20 is rolled but before you learn whether the save succeeded." });
+  if (s.motif === "paw")
+    out.push({ h:"Effect", t:"When " + who + " takes " + d + " damage, you can expend a use of the charm to reduce that damage by 1d6 plus your Proficiency Bonus." });
+  if (s.motif === "carp")
+    out.push({ h:"Effect", t:"When " + who + " fails " + an + a + " check or " + an + a + " saving throw, you can expend a use of the charm to let that creature reroll the d20 and add 1d4 to the roll. It must use the new result." });
+
+  out.push({ h:"Uses", t:
+    s.quality === "clouded" ? "The charm has 1 use. It regains that use 7 days after the use is expended." :
+    s.quality === "clear"   ? "The charm has 1 use. It regains that use daily at dawn." :
+                              "The charm has a number of uses equal to your Proficiency Bonus. It regains all expended uses daily at dawn." });
+  out.push({ h:"Bearer", t:"You decide when one of the charm's uses is expended, including when the effect benefits another creature." });
+  return out;
+}
+
+const COLOR_SHORT = { russet:"Russet", black:"Black", lavender:"Lavender", palegreen:"Pale-Green", white:"White", deepgreen:"Deep-Green" };
+const MOTIF_SHORT = { eye:"Open Eye", gate:"Standing Gate", paw:"Sheltering Paw", carp:"Leaping Carp" };
+const QUAL_SHORT  = { clouded:"Clouded", clear:"Clear", flawless:"Flawless" };
+const CORD_SHORT  = { hemp:"Hemp", silk:"Silk", gold:"Gold-Thread" };
+
+function jadeName(s) {
+  return QUAL_SHORT[s.quality] + " " + COLOR_SHORT[s.color] + " " + MOTIF_SHORT[s.motif] + " on " + CORD_SHORT[s.cord];
+}
+
+/* ── State and rendering ── */
+const SETS = { tea:TEA, jade:JADE };
+let tab = "tea";
+const sel = { tea:{}, jade:{} };
+
+const panel = document.getElementById("panel");
+const root  = document.getElementById("root");
+
+function render() {
+  const set = SETS[tab], s = sel[tab];
+  root.classList.toggle("jade-mode", tab === "jade");
+
+  let html = set.intro.map(p => `<p class="intro">${p}</p>`).join("");
+
+  set.steps.forEach(step => {
+    html += `<div class="step-head"><h2>${step.label}</h2></div>
+             <div class="step-note"><span class="step-num">${step.num}.</span> ${step.note}</div>`;
+    html += step.opts.map(o => `
+      <button class="opt${s[step.key] === o.id ? " on" : ""}" data-step="${step.key}" data-id="${o.id}">
+        <div class="opt-top">
+          <span class="opt-name">${o.name}</span>
+          <span class="opt-cost">${o.cost === 0 ? "no charge" : o.cost + (o.cost === 1 ? " token" : " tokens")}</span>
+        </div>
+        <div class="opt-flavor">${o.f}</div>
+      </button>`).join("");
+  });
+
+  html += revealHTML();
+  panel.innerHTML = html;
+  tally();
+}
+
+function chosenCount() {
+  const set = SETS[tab], s = sel[tab];
+  return set.steps.filter(st => s[st.key]).length;
+}
+function cost() {
+  const set = SETS[tab], s = sel[tab];
+  return set.steps.reduce((sum, st) => {
+    const o = st.opts.find(x => x.id === s[st.key]);
+    return sum + (o ? o.cost : 0);
+  }, 0);
+}
+
+function revealHTML() {
+  const set = SETS[tab], s = sel[tab], total = set.steps.length, have = chosenCount();
+
+  if (have < total) {
+    const left = set.steps.filter(st => !s[st.key]).map(st => st.label.toLowerCase());
+    const word = left.length === 1 ? "the " + left[0] : left.slice(0,-1).join(", ") + " and " + left.slice(-1);
+    return `<div class="reveal">
+      <div class="reveal-label">${tab === "tea" ? "Not yet brewed" : "Not yet cut"}</div>
+      <p class="sealed">${tab === "tea"
+        ? "The keeper has the kettle on and is waiting on " + word + ". <b>" + have + " of " + total + " chosen.</b>"
+        : "The carver has the blank on the bench and is waiting on " + word + ". <b>" + have + " of " + total + " chosen.</b>"}</p>
+    </div>`;
+  }
+
+  const rules = tab === "tea" ? teaRules(s) : jadeRules(s);
+  const name  = tab === "tea" ? teaName(s)  : jadeName(s);
+  const c = cost();
+
+  const caveat = tab === "tea"
+    ? "A purchase is three servings. Each serving is brewed and drunk separately and carries the full effect. A creature can benefit from only one festival tea at a time; drinking another serving ends any effect from a previous festival tea."
+    : "A creature can benefit from only one jade charm on a single roll or a single instance of damage. Identical jade-charm effects don't stack.";
+
+  const att = (tab === "jade" && s.quality === "flawless") ? `<div class="att-badge">Requires Attunement</div>` : "";
+
+  return `<div class="reveal done">
+    <div class="reveal-label">${tab === "tea" ? "Brewed" : "Cut and strung"}</div>
+    <div class="item-name">${name}</div>
+    <div class="item-price">${c} ${c === 1 ? "token" : "tokens"}${tab === "tea" ? " for three servings" : ""}</div>
+    ${att}
+    <div class="item-rules">${rules.map(r => `<div class="rule"><b>${r.h}</b>${r.t}</div>`).join("")}</div>
+    <p class="caveat">${caveat}</p>
+    <button class="reset" id="reset">Start over</button>
+  </div>`;
+}
+
+function tally() {
+  const set = SETS[tab], have = chosenCount(), total = set.steps.length, c = cost();
+  document.getElementById("tallySteps").textContent = have === total
+    ? (tab === "tea" ? "Tea complete" : "Charm complete")
+    : have + " of " + total + " chosen";
+  document.getElementById("tallyCost").textContent = c + (c === 1 ? " token" : " tokens");
+}
+
+panel.addEventListener("click", e => {
+  const o = e.target.closest(".opt");
+  if (o) {
+    const s = sel[tab];
+    s[o.dataset.step] = (s[o.dataset.step] === o.dataset.id) ? undefined : o.dataset.id;
+    const y = window.scrollY;
+    render();
+    window.scrollTo(0, y);
+    return;
+  }
+  if (e.target.id === "reset") { sel[tab] = {}; render(); window.scrollTo({ top:0, behavior:"smooth" }); }
+});
+
+document.querySelector(".tabs").addEventListener("click", e => {
+  const t = e.target.closest(".tab"); if (!t) return;
+  tab = t.dataset.tab;
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === t));
+  render();
+  window.scrollTo({ top:0, behavior:"smooth" });
+});
+
+document.getElementById("tally").addEventListener("click", () => {
+  const r = document.querySelector(".reveal");
+  if (r) r.scrollIntoView({ behavior:"smooth", block:"center" });
+});
+
+render();
+</script>
+</body>
+</html>

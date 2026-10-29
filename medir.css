@@ -1,0 +1,298 @@
+/* ════════════════════════════════════════════════════════════════
+   The Mediran Chronicles · shared styles
+
+   Built around the Fifteen Ascendants. Dark is the night sky the
+   starreaders chart; light is moonstone. Surfaces are flat and cut
+   with hairlines, gold is the Radiant Path's gold and marks anything
+   chosen, and each page carries the sigil of the Ascendant whose
+   domain it falls under.
+
+   Type: Marcellus (titles and names), Spectral (reading), Lexend
+   (buttons, labels, numbers). Sizes are in rem so browser zoom and
+   phone text settings scale them.
+   ════════════════════════════════════════════════════════════════ */
+
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg:          #eceef1;   /* moonstone */
+  --bg-deep:     #e3e6eb;
+  --surface:     #f8f9fb;
+  --surface-2:   #ffffff;
+  --surface-3:   #e2e5ea;
+  --border:      #d6d9e0;
+  --border-hi:   #b8bcc7;
+  --line:        #a3a8b5;
+
+  --text:        #12141b;
+  --text-dim:    #434756;
+  --text-ghost:  #5a5e6d;
+  --on-accent:   #ffffff;
+
+  --gold:        #7a5c16;  --gold-rgb: 122,92,22;   /* the Radiant Path's gold, as ink */
+  --gold-line:   #b08a3a;                            /* gold as a hairline or rule */
+  --blue:        #1f3a70;  --blue-rgb: 31,58,112;
+  --blue-mid:    #2f4f8c;
+  --blue-deep:   #12141b;
+  --maroon:      #7d2437;  --maroon-rgb: 125,36,55;
+  --mauve:       #634a78;
+  --jade:        #2a6047;  --jade-rgb: 42,96,71;
+  --token:       #745510;
+
+  --co: #5c5040;  --uc: #2a6136;  --ra: #24508f;  --vr: #5e4686;  --lg: #7e2f6c;  --at: #1f5f5e;
+  --by: #6a5000;  --bo: #883a10;  --br: #8a1d30;
+
+  --c-atticus: #735412;  --c-evessa: #634a78;  --c-fizz: #87461a;  --c-jet: #8a2e2e;
+  --c-otho:    #2a6136;  --c-raiten: #1f5585;  --c-party: #52545c;
+
+  --t-living: #2f6070;  --t-living-bg: #e6eef0;  --t-couchant: #2c5a37;
+  --t-rampant: #8a2a2a; --t-chorus: #55468a;     --t-unreigned: #b9bdc8;
+
+  --hi:          rgba(255,255,255,.9);   /* the lit top edge of a cut surface */
+  --sunk:        inset 0 1px 2px rgba(18,20,27,.10);
+  --bar-bg:      #eceef1;
+  --gold-tint:   .07;
+  --scrim:       rgba(18,20,27,.42);
+
+  --page-texture: linear-gradient(180deg, #f4f5f7 0%, rgba(244,245,247,0) 38%);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg:          #08090f;   /* night */
+  --bg-deep:     #06070b;
+  --surface:     #10121a;
+  --surface-2:   #151823;
+  --surface-3:   #05060a;
+  --border:      #22263a;
+  --border-hi:   #33384f;
+  --line:        #474d66;
+
+  --text:        #ebeaf2;
+  --text-dim:    #a5a7b8;
+  --text-ghost:  #8a8c9e;
+  --on-accent:   #08090f;
+
+  --gold:        #dcbb72;  --gold-rgb: 220,187,114;
+  --gold-line:   #a98c4c;
+  --blue:        #9cb9f2;  --blue-rgb: 156,185,242;
+  --blue-mid:    #7a9ad8;
+  --blue-deep:   #ebeaf2;
+  --maroon:      #e8909f;  --maroon-rgb: 232,144,159;
+  --mauve:       #c2a8d8;
+  --jade:        #63c497;  --jade-rgb: 99,196,151;
+  --token:       #e6bd5f;
+
+  --co: #b0a796;  --uc: #45bf75;  --ra: #5ea6e6;  --vr: #a58cea;  --lg: #d470d4;  --at: #40d0d0;
+  --by: #d4ab2a;  --bo: #e5794a;  --br: #ec6a80;
+
+  --c-atticus: #d4ab5a;  --c-evessa: #b9a0d6;  --c-fizz: #df9a64;  --c-jet: #e57a72;
+  --c-otho:    #79bf84;  --c-raiten: #6fb4ea;  --c-party: #a2a9b8;
+
+  --t-living: #5aa3b8;  --t-living-bg: #0f1a22;  --t-couchant: #66b479;
+  --t-rampant: #e06a6a; --t-chorus: #a594e0;     --t-unreigned: #3a3f55;
+
+  --hi:          rgba(200,210,255,.045);
+  --sunk:        inset 0 1px 2px rgba(0,0,0,.6);
+  --bar-bg:      #0b0c13;
+  --gold-tint:   .12;
+  --scrim:       rgba(0,0,0,.66);
+
+  --page-texture: radial-gradient(ellipse 70% 45% at 50% -5%, #121630 0%, rgba(18,22,48,0) 70%);
+}
+
+/* Material tokens the page styles use. Everything is flat and cut with a
+   hairline: panels sit on the page with a lit top edge, wells are sunk a
+   pixel, and gold marks anything chosen. */
+:root {
+  --slab-fill:   var(--surface);
+  --slab-edge:   var(--border);
+  --slab-shadow: inset 0 1px 0 var(--hi);
+  --slab-lift:   inset 0 1px 0 var(--hi), 0 0 0 1px var(--border-hi);
+  --well-fill:   var(--surface-3);
+  --well-shadow: var(--sunk), inset 0 0 0 1px var(--border);
+  --btn-fill:    var(--surface-2);
+  --btn-shadow:  inset 0 1px 0 var(--hi);
+  --btn-press:   var(--sunk);
+  --gold-fill:   rgba(var(--gold-rgb), var(--gold-tint));
+  --gold-shadow: inset 0 0 0 1px var(--gold-line);
+  --gold-edge:   var(--gold-line);
+  --on-gold:     var(--gold);
+  --groove-dark: var(--border);
+  --groove-light: transparent;
+  --carve:       none;
+
+  --maroon-bg: rgba(var(--maroon-rgb),.08);  --maroon-bd: rgba(var(--maroon-rgb),.40);
+  --blue-bd:   rgba(var(--blue-rgb),.40);
+  --jade-bg:   rgba(var(--jade-rgb),.08);    --jade-bd:   rgba(var(--jade-rgb),.40);
+
+  --surface2: var(--surface-2);   /* names the Caelric tree uses */
+  --dim:      var(--text-dim);
+  --ghost:    var(--text-ghost);
+
+  --font-display: 'Marcellus', 'Optima', 'Palatino Linotype', Georgia, serif;
+  --font-ui:      'Lexend', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-text:    'Spectral', Georgia, 'Times New Roman', serif;
+  --font-kanji:   'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', 'MS Mincho', serif;
+
+  --r-card: 4px;
+  --r-ctl:  3px;
+  --r-pill: 3px;
+
+  --page-w: 72rem;
+  --gutter: clamp(1rem, 4vw, 3rem);
+  --pad-l: max(var(--gutter), env(safe-area-inset-left));
+  --pad-r: max(var(--gutter), env(safe-area-inset-right));
+}
+
+/* ── Base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--bg);
+  scroll-padding-top: 6rem;
+}
+@media (min-width: 1700px) { html { font-size: 106.25%; } }   /* the television */
+@media (min-width: 2300px) { html { font-size: 118.75%; } }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-text);
+  font-size: 1.1875rem;
+  line-height: 1.6;
+  font-variant-numeric: lining-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-wrap: break-word;
+  --bar-inline: max(var(--pad-l), calc((100% - var(--page-w)) / 2 + var(--gutter)));
+}
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: var(--page-texture);
+}
+
+a, button, input, select, [role="tab"] { -webkit-tap-highlight-color: transparent; }
+button, a { touch-action: manipulation; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+img, svg { display: block; max-width: 100%; }
+
+:focus-visible { outline: 1px solid var(--gold); outline-offset: 3px; }
+::selection { background: rgba(var(--gold-rgb), .28); }
+
+.kanji { font-family: var(--font-kanji); font-style: normal; font-weight: 400; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* ── Sigils: each Ascendant's icon, drawn as an engraved line ── */
+.sigil {
+  flex-shrink: 0; width: 1em; height: 1em; overflow: visible;
+  fill: none; stroke: currentColor; stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.sigil * { vector-effect: non-scaling-stroke; }
+.sigil .fill { fill: currentColor; }
+
+/* ── Top bar ─────────────────────────────────────────────────── */
+.medir-bar {
+  position: relative; z-index: 30;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  max-width: var(--page-w); margin: 0 auto;
+  padding: max(.75rem, env(safe-area-inset-top)) var(--pad-r) 0 var(--pad-l);
+}
+.medir-bar.is-hub { justify-content: flex-end; }
+
+.medir-home {
+  display: inline-flex; align-items: center; gap: .5rem;
+  min-height: 44px; margin-left: -.4rem; padding: 0 .4rem;
+  font-family: var(--font-display); font-size: 1.0625rem; letter-spacing: .01em;
+  color: var(--text-dim); text-decoration: none;
+}
+.medir-home svg { width: 1rem; height: 1rem; flex-shrink: 0; }
+
+/* the theme switch: a gold bead in a hairline channel */
+.medir-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; margin-right: -.25rem; padding: 0 .25rem;
+  background: none; border: 0;
+}
+.medir-toggle .track {
+  position: relative; display: block; width: 3.25rem; height: 1.75rem;
+  background: var(--surface-3); border-radius: 999px; box-shadow: var(--sunk), inset 0 0 0 1px var(--border-hi);
+}
+.medir-toggle .knob {
+  position: absolute; top: .2rem; left: .2rem;
+  display: grid; place-items: center; width: 1.35rem; height: 1.35rem;
+  background: var(--gold); border-radius: 50%;
+  color: var(--bg);
+  transition: transform .22s cubic-bezier(.3,.7,.2,1);
+}
+.medir-toggle svg { width: .85rem; height: .85rem; }
+.medir-toggle .i-moon { display: none; }
+:root[data-theme="dark"] .medir-toggle .knob   { transform: translateX(1.5rem); }
+:root[data-theme="dark"] .medir-toggle .i-moon { display: block; }
+:root[data-theme="dark"] .medir-toggle .i-sun  { display: none; }
+
+@media (hover: hover) and (pointer: fine) { .medir-home:hover { color: var(--text); } }
+.medir-home:active { color: var(--text); }
+
+/* ── Page heading ────────────────────────────────────────────── */
+.page-head { margin: clamp(1.75rem, 5vw, 3.75rem) 0 clamp(1.75rem, 4vw, 3rem); }
+.page-mark {
+  display: flex; align-items: center; gap: .6rem;
+  margin-bottom: .9rem;
+  font-family: var(--font-ui); font-size: .9375rem; color: var(--text-dim);
+}
+.page-mark .sigil { width: 2.25rem; height: 2.25rem; color: var(--gold); }
+.page-title {
+  margin: 0;
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(2.125rem, 1.4rem + 2.8vw, 3.75rem);
+  line-height: 1.06; letter-spacing: 0;
+  color: var(--text);
+  text-wrap: balance;
+}
+.page-sub {
+  margin: .75rem 0 0; max-width: 38rem;
+  font-size: 1.1875rem; line-height: 1.5; color: var(--text-dim);
+}
+
+/* ── Badges: a rarity mark and its name ──────────────────────── */
+.badge, .att-badge {
+  --c: var(--text-dim);
+  display: inline-flex; align-items: center; gap: .45em;
+  padding: .1rem .55rem .1rem .45rem;
+  font-family: var(--font-ui); font-size: .875rem; font-weight: 400; line-height: 1.5; white-space: nowrap;
+  color: var(--c); background: transparent; border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  border-radius: 2px; box-shadow: none;
+}
+.badge::before, .att-badge::before {
+  content: ''; flex-shrink: 0; width: .5em; height: .5em; transform: rotate(45deg);
+  background: var(--c);
+}
+.badge.co { --c: var(--co); }
+.badge.uc { --c: var(--uc); }
+.badge.ra { --c: var(--ra); }
+.badge.vr { --c: var(--vr); }
+.badge.lg { --c: var(--lg); }
+.badge.at, .att-badge { --c: var(--at); }
+.badge.one { --c: var(--maroon); }
+.badge.bt  { --c: var(--tc, var(--text-dim)); }
+.badge.unat { --c: var(--text-ghost); }
+.badge.unat::before { background: none; box-shadow: inset 0 0 0 1px var(--text-ghost); }
+
+@media print {
+  .medir-bar, body::before { display: none; }
+  body { background: #fff; color: #000; }
+}
