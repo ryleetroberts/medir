@@ -1,0 +1,52 @@
+/* The Mediran Chronicles · header ornament
+   Dark: a field of stars in the night gradient. Light: a gold inlaid rule. */
+.crown {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 0;
+  height: clamp(18rem, 42vw, 30rem);
+  overflow: hidden; pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+          mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+}
+.crown > * { position: absolute; inset: 0; }
+.crown .inlay { display: none; top: calc(env(safe-area-inset-top) + 3.6rem); bottom: auto; height: auto; }
+.crown .inlay svg { position: relative; display: block; width: min(54rem, 100% - 2rem); height: auto; margin-inline: auto; overflow: visible; }
+/* the rule runs on from the ornament to each edge, thinning to nothing */
+.crown .inlay .run { position: absolute; top: 50%; width: calc(50% - min(54rem, 100% - 2rem) * .06); height: 1.5px; margin-top: -.75px; background: var(--run); }
+.crown .inlay .run.l { left: 0;  --run: linear-gradient(90deg, rgba(214,180,98,0), #d4b062 50%, #c29d48); }
+.crown .inlay .run.r { right: 0; --run: linear-gradient(270deg, rgba(214,180,98,0), #d4b062 50%, #c29d48); }
+
+/* ── Night: stars ── */
+.crown .star {
+  position: absolute; border-radius: 50%;
+  background: #e9ecf7;
+  animation: twinkle var(--d) ease-in-out var(--w) infinite;
+  opacity: var(--o);
+}
+.crown .star.warm { background: #f1dfae; }
+.crown .spark {
+  position: absolute; width: var(--s); height: var(--s); color: #e6c983;
+  animation: twinkle var(--d) ease-in-out var(--w) infinite;
+  opacity: var(--o);
+  filter: drop-shadow(0 0 3px rgba(230,201,131,.6));
+}
+.crown .spark svg { width: 100%; height: 100%; fill: currentColor; }
+@keyframes twinkle {
+  0%, 100% { opacity: var(--o); transform: scale(1); }
+  50%      { opacity: calc(var(--o) * .2); transform: scale(.7); }
+}
+
+/* ── Day: a gold inlaid rule ── */
+:root[data-theme="light"] .crown .sky { display: none; }
+:root[data-theme="light"] .crown .inlay { display: block; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .crown .sky { display: none; }
+  :root:not([data-theme]) .crown .inlay { display: block; }
+}
+.crown .inlay .gl { fill: none; stroke: url(#crownGold); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-linejoin: miter; }
+.crown .inlay .gl.fine { stroke-width: 1; }
+.crown .inlay .gf { fill: url(#crownGold); }
+
+@media (prefers-reduced-motion: reduce) {
+  .crown .star, .crown .spark { animation: none; }
+}
+@media print { .crown { display: none; } }
