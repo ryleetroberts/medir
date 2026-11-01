@@ -90,7 +90,6 @@
   #stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
   #wires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; max-width: none; overflow: visible; pointer-events: none; }
   #wires path { fill: none; stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; transition: opacity .2s; }
-  #wires path.base { stroke-dasharray: 4 3; }
   #wires path.marr { stroke: var(--line); }
   #wires path.on-path { stroke: var(--gold); stroke-width: 2; }
   .tracing #wires path:not(.on-path) { opacity: .35; }
@@ -107,11 +106,6 @@
   .pc.sov    { border-left-color: var(--gold-line); }
   .pc.con    { background: var(--surface-3); border-left-color: var(--line); }
   .pc.kin    { background: var(--surface-3); }
-  .pc.live   { border-left-color: var(--t-living); }
-  .pc.couch  { border-left-color: var(--t-couchant); }
-  .pc.ramp   { border-left-color: var(--t-rampant); }
-  .pc.chor   { border-left-color: var(--t-chorus); }
-  .pc.base   { border-left-style: dashed; }
   .pc.gone   { display: none; }
   .pc.sel    { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 8px 22px -10px rgba(var(--gold-rgb), .55); }
   .pc.flash  { animation: flash 1.2s ease 2; }
@@ -129,8 +123,6 @@
   .pc .dt  { display: block; margin-top: 3px; font-family: var(--font-ui); font-size: 10.5px; line-height: 1.3; color: var(--text-dim); font-variant-numeric: lining-nums; }
   .pc .rg  { display: block; margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); font-family: var(--font-ui); font-size: 11px; color: var(--text); }
   .pc .tag { display: block; margin-top: 3px; font-family: var(--font-text); font-size: 11px; font-style: italic; line-height: 1.3; color: var(--text-ghost); }
-  .pc .ban { display: inline-block; margin-top: 4px; font-family: var(--font-ui); font-size: 10px; font-weight: 500; }
-  .pc .ban.couch { color: var(--t-couchant); } .pc .ban.ramp { color: var(--t-rampant); } .pc .ban.chor { color: var(--t-chorus); }
   .pc .wed { display: block; font-family: var(--font-ui); font-size: 10px; color: var(--text-ghost); }
   .pc .cn  { display: block; margin-top: 1px; font-family: var(--font-display); font-size: 14px; line-height: 1.2; color: var(--maroon); }
   .pc .ch  { display: block; font-family: var(--font-text); font-size: 12px; color: var(--text-dim); }
@@ -235,13 +227,7 @@
   </div>
   <ul class="key" id="key" hidden>
     <li><i style="border-left-color:var(--gold-line)"></i>Sovereign</li>
-    <li><i style="border-left-color:var(--t-unreigned)"></i>Never reigned</li>
     <li><i style="border-left-color:var(--line);background:var(--surface-3)"></i>Consort</li>
-    <li><i style="border-left-color:var(--t-living)"></i>Living</li>
-    <li><i style="border-left-color:var(--t-couchant)"></i>Couchant</li>
-    <li><i style="border-left-color:var(--t-rampant)"></i>Rampant</li>
-    <li><i style="border-left-color:var(--t-chorus)"></i>Chorus</li>
-    <li><i style="border-left-style:dashed"></i>Baseborn</li>
   </ul>
 </header>
 
@@ -349,7 +335,6 @@ async function load() {
 
 /* ── Cards ────────────────────────────────────────────────────── */
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const BAN = { Couchant: 'couch', Rampant: 'ramp', Chorus: 'chor' };
 
 function kindOf(p) {
   if (p.kind === 'consort') return 'con';
@@ -373,15 +358,14 @@ function cardHTML(p) {
   return `${p.ordinal ? `<span class="ord">${esc(p.ordinal)}</span>` : ''}
     <span class="nm">${esc(p.name)}</span>${p.epithet ? `<span class="epi">${esc(p.epithet)}</span>` : ''}
     <span class="dt">${dateLine(p)}</span>${reign}
-    ${p.note && k !== 'sov' ? `<span class="tag">${esc(p.note)}</span>` : ''}
-    ${p.banner ? `<span class="ban ${BAN[p.banner] || ''}">${esc(p.banner)}</span>` : ''}`;
+    ${p.note && k !== 'sov' ? `<span class="tag">${esc(p.note)}</span>` : ''}`;
 }
 function makeCards() {
   for (const p of people.values()) {
     const el = document.createElement('button');
     el.type = 'button';
     const k = kindOf(p);
-    el.className = ['pc', k, p.living && 'live', BAN[p.banner], p.baseborn && 'base'].filter(Boolean).join(' ');
+    el.className = `pc ${k}`;
     el.dataset.id = p.id;
     el.style.width = W[k] + 'px';
     el.innerHTML = cardHTML(p);
@@ -458,7 +442,7 @@ function drawWires() {
     const q = p.parentP;
     if (q && q.shown) {
       const top = p.y, bar = top - BAR;
-      parts.push(`<path data-child="${p.id}"${p.baseborn ? ' class="base"' : ''} d="M${q.ax} ${q.ay}V${bar}H${p.ax}V${top}"/>`);
+      parts.push(`<path data-child="${p.id}" d="M${q.ax} ${q.ay}V${bar}H${p.ax}V${top}"/>`);
     }
     if (hasCouple(p) && p.spouseP.shown) {
       const x1 = p.x + p.w, x2 = p.spouseP.x, y = p.y + MARR_Y;

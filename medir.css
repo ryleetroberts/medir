@@ -288,6 +288,7 @@ img, svg { display: block; max-width: 100%; }
 .badge.lg { --c: var(--lg); }
 .badge.at, .att-badge { --c: var(--at); }
 .badge.one { --c: var(--maroon); }
+.badge.bd  { --c: var(--gold); }
 .badge.bt  { --c: var(--tc, var(--text-dim)); }
 .badge.unat { --c: var(--text-ghost); }
 .badge.unat::before { background: none; box-shadow: inset 0 0 0 1px var(--text-ghost); }
