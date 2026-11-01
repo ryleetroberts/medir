@@ -434,6 +434,7 @@ function layout() {
   }
   drawWires();
   placeFolds();
+  if (zoom) limitZoom();
 }
 
 function drawWires() {
@@ -443,7 +444,8 @@ function drawWires() {
     const q = p.parentP;
     if (q && q.shown) {
       const top = p.y, bar = top - BAR;
-      parts.push(`<path data-child="${p.id}" d="M${q.ax} ${q.ay}V${bar}H${p.ax}V${top}"/>`);
+      const cx = p.x + p.w / 2;   // drop to the child's own card, not the couple
+      parts.push(`<path data-child="${p.id}" d="M${q.ax} ${q.ay}V${bar}H${cx}V${top}"/>`);
     }
     if (hasCouple(p) && p.spouseP.shown) {
       const x1 = p.x + p.w, x2 = p.spouseP.x, y = p.y + MARR_Y;
@@ -482,6 +484,17 @@ function bounds() {
   }
   return { x0, y0, x1, y1 };
 }
+/* Zooming out stops at the width of the whole tree, and panning stops
+   a little past its edges, so the tree can't be lost in empty space. */
+function minScale() {
+  const b = bounds(), r = vp.getBoundingClientRect();
+  return Math.min(1, Math.max(0.05, (r.width - 32) / (b.x1 - b.x0)));
+}
+function limitZoom() {
+  const b = bounds(), r = vp.getBoundingClientRect(), pad = 120;
+  zoom.scaleExtent([minScale(), 2.5])
+      .translateExtent([[b.x0 - pad - r.width / 4, b.y0 - pad], [b.x1 + pad + r.width / 4, b.y1 + pad + r.height / 2]]);
+}
 function setupZoom() {
   zoom = d3.zoom().scaleExtent([0.1, 2.5])
     .filter(e => (!e.ctrlKey || e.type === 'wheel') && !e.button && !e.target.closest('.fold'))
@@ -490,6 +503,8 @@ function setupZoom() {
       stage.style.transform = `translate(${current.x}px, ${current.y}px) scale(${current.k})`;
     });
   d3.select(vp).call(zoom);
+  limitZoom();
+  addEventListener('resize', limitZoom);
 }
 function go(t, ms = 650) {
   const sel = d3.select(vp);
@@ -498,13 +513,13 @@ function go(t, ms = 650) {
 }
 function zoomBy(f) {
   const r = vp.getBoundingClientRect();
-  const t = current, k = Math.max(0.1, Math.min(2.5, t.k * f));
+  const t = current, k = Math.max(minScale(), Math.min(2.5, t.k * f));
   const cx = r.width / 2, cy = r.height / 2;
   go(d3.zoomIdentity.translate(cx - (cx - t.x) * k / t.k, cy - (cy - t.y) * k / t.k).scale(k), 250);
 }
 function fit(ms) {
   const b = bounds(), r = vp.getBoundingClientRect();
-  const k = Math.max(0.1, Math.min(1, (r.width - 32) / (b.x1 - b.x0)));
+  const k = minScale();
   go(d3.zoomIdentity.translate((r.width - (b.x1 - b.x0) * k) / 2 - b.x0 * k, 16 - b.y0 * k).scale(k), ms);
 }
 function openingView() {
