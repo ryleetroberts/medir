@@ -174,6 +174,10 @@
   .panel ul.kids { list-style: none; margin: 0; padding: 0; }
   .panel ul.kids li + li { margin-top: .15rem; }
   .p-note { margin: 1rem 0 0; font-size: 1rem; font-style: italic; color: var(--text-dim); }
+  .p-about { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .p-about p { margin: 0; font-size: 1.0625rem; line-height: 1.6; }
+  .p-about p + p { margin-top: .85rem; }
+  .p-about strong { font-weight: 600; }
   @media (max-width: 40rem) {
     .panel {
       left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 58%;
@@ -314,7 +318,8 @@ async function load() {
       reignStart: num(r.reign_start), reignEnd: num(r.reign_end), reignMonths: r.reign_months,
       reignNote: r.reign_note, relation: r.relation, parent: r.parent, otherParent: r.other_parent,
       spouse: r.spouse, house: r.house, wedded: num(r.wedded), banner: r.banner,
-      living: yes(r.living), baseborn: yes(r.baseborn), note: r.note, kids: []
+      living: yes(r.living), baseborn: yes(r.baseborn), note: r.note,
+      origin: r.origin, about: r.about, kids: []
     });
   }
   for (const p of people.values()) {
@@ -336,6 +341,10 @@ async function load() {
 
 /* ── Cards ────────────────────────────────────────────────────── */
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+/* The write-ups in caelric.csv use blank lines between paragraphs, **bold** and _italic_. */
+const prose = s => String(s).trim().split(/\n\s*\n/).map(par => '<p>' + esc(par)
+  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  .replace(/(^|[^\w])_(.+?)_(?=[^\w]|$)/g, '$1<em>$2</em>') + '</p>').join('');
 
 function kindOf(p) {
   if (p.kind === 'consort') return 'con';
@@ -596,6 +605,7 @@ function openPanel(p) {
     rows.push(['Reigned', esc(reign) + (p.reignNote ? `, ${esc(p.reignNote)}` : '')]);
   }
   if (p.relation) rows.push(['Relation', esc(p.relation)]);
+  if (p.origin) rows.push(['From', esc(p.origin)]);
   rows.push(['Born', fmtYear(p.born)]);
   rows.push(p.died == null ? ['Living', `aged ${ageOf(p)}`] : ['Died', `${fmtYear(p.died)}, aged ${ageOf(p)}`]);
   if (p.spouseP) rows.push([p.kind === 'consort' ? 'Consort of' : 'Wedded',
@@ -615,7 +625,8 @@ function openPanel(p) {
     ${p.epithet ? `<p class="p-epi">${esc(p.epithet)}</p>` : ''}
     ${p.kind === 'consort' && p.house ? `<p class="p-house">${esc(p.house)}</p>` : ''}
     <dl>${rows.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join('')}</dl>
-    ${p.note ? `<p class="p-note">${esc(p.note)}</p>` : ''}`;
+    ${p.note ? `<p class="p-note">${esc(p.note)}</p>` : ''}
+    ${p.about ? `<div class="p-about">${prose(p.about)}</div>` : ''}`;
   panel.hidden = false;
   panel.scrollTop = 0;
 }

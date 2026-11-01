@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#eceef1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#08090f" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Documents, visions, and spoken clues the party's characters remember, as of Emberfall 22, 1473 AU.">
+<title>The Party's Record – The Mediran Chronicles</title>
+<link rel="stylesheet" href="crown.css"><script src="crown.js" defer></script>
+<script src="theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@300..600&family=Marcellus&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,600&display=swap">
+<link rel="stylesheet" href="medir.css">
+<style>
+  .wrap {
+    position: relative; z-index: 1;
+    max-width: var(--page-w); margin: 0 auto;
+    padding: 0 var(--pad-r) calc(5rem + env(safe-area-inset-bottom)) var(--pad-l);
+  }
+
+  /* ── Group tabs, held at the top while you scroll ── */
+  .tabs-nav {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; gap: .15rem; align-items: stretch;
+    margin: 0 calc(-1 * var(--pad-r)) 1.25rem calc(-1 * var(--pad-l));
+    padding: 0 var(--pad-r) 0 var(--pad-l);
+    border-bottom: 1px solid var(--groove-dark); box-shadow: 0 1px 0 var(--groove-light);
+    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+    scroll-snap-type: x proximity; scroll-padding-inline: var(--pad-l);
+    --char-color: var(--gold);
+  }
+  .tabs-nav::-webkit-scrollbar { display: none; }
+  .tabs-nav.is-pinned {
+    background: var(--bar-bg); border-bottom-color: transparent;
+    box-shadow: 0 0 0 100vmax var(--bar-bg), 0 1px 0 100vmax var(--groove-dark);
+    clip-path: inset(0 -100vmax -1px);
+  }
+  @media (min-width: 48rem) { .tabs-nav { margin-inline: 0; padding-inline: 0; } }
+  .tab-btn {
+    position: relative; flex-shrink: 0; scroll-snap-align: start;
+    min-height: 50px; padding: .5rem .7rem;
+    background: none; border: 0;
+    font-family: var(--font-ui); font-size: 1rem; font-weight: 400;
+    color: var(--text-ghost); white-space: nowrap; transition: color .15s;
+  }
+  .tab-btn::after {
+    content: ''; position: absolute; left: .7rem; right: .7rem; bottom: -1px; height: 3px; border-radius: 2px 2px 0 0;
+    background: var(--char-color); opacity: 0; transition: opacity .15s;
+  }
+  .tab-btn.active { color: var(--char-color); font-weight: 500; }
+  .tab-btn.active::after { opacity: 1; }
+  .tab-sep { flex-shrink: 0; width: 2px; margin: .85rem .3rem; border-left: 1px solid var(--groove-dark); border-right: 1px solid var(--groove-light); }
+  @media (hover: hover) and (pointer: fine) { .tab-btn:hover { color: var(--text); } }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Search ── */
+  #search {
+    width: 100%; height: 50px; margin-bottom: 1.75rem; padding: 0 1.1rem;
+    background: var(--well-fill); border: 0; border-radius: var(--r-ctl); box-shadow: var(--well-shadow);
+    font-family: var(--font-ui); font-size: 1.0625rem; color: var(--text);
+  }
+  #search:focus { outline: none; box-shadow: var(--well-shadow), 0 0 0 2px var(--blue); }
+  #search::placeholder { color: var(--text-ghost); opacity: 1; }
+  body.searching .tab-panel { display: block; }
+  body.searching .tabs-nav { opacity: .45; pointer-events: none; }
+  .tab-panel.nohit { display: none !important; }
+  .card.nohit { display: none; }
+  .empty { display: none; margin: 2rem 0; font-size: 1.125rem; font-style: italic; color: var(--text-dim); }
+
+  /* ── Group heading ── */
+  .group-head { margin-bottom: 1.5rem; }
+  .group-head h2 {
+    margin: 0 0 .45rem;
+    font-family: var(--font-display); font-weight: 400;
+    font-size: clamp(1.625rem, 1.15rem + 1.7vw, 2.375rem); line-height: 1.12; text-wrap: balance; color: var(--text);
+  }
+  .tab-panel + .tab-panel { margin-top: 3rem; }
+
+  /* ── Entries ── */
+  .card {
+    max-width: 52rem; margin-bottom: .9rem; padding: 1.3rem 1.5rem 1.35rem;
+    background: var(--slab-fill); border: 1px solid var(--slab-edge); border-radius: var(--r-card); box-shadow: var(--slab-shadow);
+  }
+  .card-name {
+    margin: 0; font-family: var(--font-display); font-weight: 400;
+    font-size: 1.5rem; line-height: 1.2; color: var(--text); text-wrap: balance;
+  }
+  .badges { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+  .badge.k-doc    { --c: var(--gold); }
+  .badge.k-said   { --c: var(--blue); }
+  .badge.k-vision { --c: var(--mauve); }
+  .meta {
+    display: flex; flex-wrap: wrap; gap: .1rem 1.1rem; margin: .55rem 0 0;
+    font-family: var(--font-ui); font-size: .9375rem; color: var(--text-ghost);
+  }
+  .body { margin-top: .9rem; font-size: 1.125rem; line-height: 1.6; }
+  .body p { margin: 0 0 .85em; }
+  .body > :last-child { margin-bottom: 0; }
+  .body blockquote {
+    margin: 1rem 0; padding: .9rem 1.15rem;
+    background: var(--well-fill); border: 0; border-radius: var(--r-ctl); box-shadow: var(--well-shadow);
+  }
+  .body blockquote p { margin: 0 0 .8em; }
+  .body blockquote > :last-child { margin-bottom: 0; }
+  .body ul { margin: .5em 0 .9em; padding-left: 1.3em; }
+  .body li { margin: .4em 0; }
+  .body li p { margin: 0; }
+  @media (max-width: 37.5rem) { .card { padding: 1.1rem 1rem 1.15rem; } .card-name { font-size: 1.375rem; } }
+  .body s { text-decoration-thickness: 1px; color: var(--text-dim); }
+</style>
+</head>
+<body>
+<nav class="medir-bar" aria-label="Site">
+  <a class="medir-home" href="index.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>The Mediran Chronicles</a>
+  <button class="medir-toggle" type="button" role="switch" aria-checked="false" aria-label="Dark mode"><span class="track" aria-hidden="true"><span class="knob"><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg><svg class="i-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg></span></span></button>
+</nav>
+<div class="wrap">
+
+  <header class="page-head">
+    <div class="page-mark"><svg class="sigil" viewBox="0 0 24 24" role="img" aria-label="The Scholar: Knowledge, Education, Logic"><title>The Scholar: Knowledge, Education, Logic</title><path d="M12 6.6C9.6 5.1 6.6 4.6 3 5v13.2c3.6-.4 6.6.1 9 1.6 2.4-1.5 5.4-2 9-1.6V5c-3.6-.4-6.6.1-9 1.6zM12 6.6v13.2"/></svg></div>
+    <h1 class="page-title">The Party's Record</h1>
+    <p class="page-sub">What your characters remember, as of Emberfall 22, 1473 AU</p>
+  </header>
+
+  <main>
+  <nav class="tabs-nav" role="tablist" aria-label="Groups" data-pin>
+<button class="tab-btn active" data-tab="echoes">Echoes and Numen Sites</button><button class="tab-btn" data-tab="faithful">The Faithful</button><button class="tab-btn" data-tab="memory">The Memory Echo</button><button class="tab-btn" data-tab="johnhale">Johnhale and the Forgotten Nine</button><button class="tab-btn" data-tab="jade">The Jade Provinces</button><button class="tab-btn" data-tab="notes-from-m">Notes from M</button><button class="tab-btn" data-tab="misc">Misc</button>
+  </nav>
+
+  <input id="search" type="search" enterkeyhint="search" aria-label="Search the record" placeholder="Search the record&hellip;" autocomplete="off">
+
+<div class="tab-panel active" id="tab-echoes"><div class="group-head"><h2>Echoes and Numen Sites</h2></div><article class="card" id="fragmenta-testimonium-de-rupturis-temporis" data-k="fragmenta testimonium de rupturis temporis gilded archive, restricted collection · ambertide 18  written in old arborwynian/elvish. it describes “entities of apparent intelligence emerging from the ruptures”: “a robed figure who drew detailed maps of cities that do not exist,” creatures “who spoke in measured cadences despite their inhuman appearance,” and beings who handled mediran artifacts “as if they were unfamiliar copies of familiar things.” such reports run “perhaps one in six-hundred rupture incidents,” nearly all from “unreliable witnesses,” and official policy dismisses them as hallucinations from rupture-exposure trauma. "><h3 class="card-name">Fragmenta Testimonium de Rupturis Temporis</h3><div class="badges"><span class="badge k-doc">Record</span></div><p class="meta"><span>Gilded Archive, restricted collection</span><span>Ambertide 18</span></p><div class="body"><p>Written in Old Arborwynian/Elvish. It describes “entities of apparent intelligence emerging from the ruptures”: “A robed figure who drew detailed maps of cities that do not exist,” creatures “who spoke in measured cadences despite their inhuman appearance,” and beings who handled Mediran artifacts “as if they were unfamiliar copies of familiar things.” Such reports run “perhaps one in six-hundred rupture incidents,” nearly all from “unreliable witnesses,” and official policy dismisses them as hallucinations from rupture-exposure trauma.</p></div></article><article class="card" id="meredith-s-theory-of-echoes-and-numen-sites" data-k="meredith’s theory of echoes and numen sites gilded archive, and again at her map with pelleas · ambertide 23–24 and solargold 10–11   what vivid echoes are, in her theory.  echoes appear most often at places with a great deal of “memory power,” the deep impression left where significant human experience happened: battles, coronations, festivals, treaties. orrin’s square in brighthold, with a thousand years of continuous significance, rates a 7 on her scale and fits the theory, as do most echoes. 
+  where the theory breaks.  some of the strongest echoes appear at sites which have no recorded history to explain them. the standing-stone sanctuary and cave south of the merchant’s road has no recorded events, settlements, or ceremonies, and no one remembers what culture built it, yet its echo rivals sites of known importance. she asks what the echo is responding to when no one alive remembers what happened there. 
+  numen sites.  two sites register at 12 or 13 on a scale she says should not go that high. she coined the term “numen site” for places whose memory power is so concentrated and so ancient that it would have to dwarf anything human activity could produce. she concludes they hold power from something that predates the accepted historical narrative. she also found evidence that something was actively preventing her from understanding these sites, and suspects there are more, better-hidden ones. 
+ 
+ 
+  the harmonwood  in the violet spires’ holdings, is open only to the council of archmagi. its accumulation spans multiple millennia, past the earliest recorded history and past the invention of writing. 
+ 
+ 
+  the crucible  in solrest’s interior is a pre-unification proving ground for solresti warriors, protected “by fear.” a solresti merchant told her caravans route around it, “adding five days to our journey.” 
+ 
+ "><h3 class="card-name">Meredith’s theory of Echoes and Numen sites</h3><div class="badges"><span class="badge k-said">Spoken</span></div><p class="meta"><span>Gilded Archive, and again at her map with Pelleas</span><span>Ambertide 23–24 and Solargold 10–11</span></p><div class="body"><p><strong>What Vivid Echoes are, in her theory.</strong> Echoes appear most often at places with a great deal of “memory power,” the deep impression left where significant human experience happened: battles, coronations, festivals, treaties. Orrin’s Square in Brighthold, with a thousand years of continuous significance, rates a 7 on her scale and fits the theory, as do most Echoes.</p>
+<p><strong>Where the theory breaks.</strong> Some of the strongest Echoes appear at sites which have no recorded history to explain them. The standing-stone sanctuary and cave south of the Merchant’s Road has no recorded events, settlements, or ceremonies, and no one remembers what culture built it, yet its Echo rivals sites of known importance. She asks what the Echo is responding to when no one alive remembers what happened there.</p>
+<p><strong>Numen Sites.</strong> Two sites register at 12 or 13 on a scale she says should not go that high. She coined the term “Numen Site” for places whose memory power is so concentrated and so ancient that it would have to dwarf anything human activity could produce. She concludes they hold power from something that predates the accepted historical narrative. She also found evidence that something was actively preventing her from understanding these sites, and suspects there are more, better-hidden ones.</p>
+<ul>
+<li>
+<p><strong>The Harmonwood</strong> in the Violet Spires’ holdings, is open only to the Council of Archmagi. Its accumulation spans multiple millennia, past the earliest recorded history and past the invention of writing.</p>
+</li>
+<li>
+<p><strong>The Crucible</strong> in Solrest’s interior is a pre-unification proving ground for Solresti warriors, protected “by fear.” A Solresti merchant told her caravans route around it, “adding five days to our journey.”</p>
+</li>
+</ul></div></article><article class="card" id="meredith-on-eldera-and-otho-s-wyrdmark-memory" data-k="meredith on eldera and otho’s wyrdmark memory gilded archive · ambertide 23–24 and solargold 10–11  eldera thistlewood’s name appears in violet spires authorizations to teach magic. no record shows what she taught or whom, only periodic confirmation that she was “authorized to continue her work.” a 1445 au margin note says her “unconventional methods continue to produce results, though her theoretical framework remains difficult to codify.” 
+ when meredith tapped the crucible pin, otho remembered that the elders’ word “wyrdmark” named the most sacred place his people keep, a stone circle deep in the dreadfen delta, and that they said there were others, far away. "><h3 class="card-name">Meredith on Eldera and Otho’s Wyrdmark memory</h3><div class="badges"><span class="badge k-said">Spoken</span></div><p class="meta"><span>Gilded Archive</span><span>Ambertide 23–24 and Solargold 10–11</span></p><div class="body"><p>Eldera Thistlewood’s name appears in Violet Spires authorizations to teach magic. No record shows what she taught or whom, only periodic confirmation that she was “authorized to continue her work.” A 1445 AU margin note says her “unconventional methods continue to produce results, though her theoretical framework remains difficult to codify.”</p>
+<p>When Meredith tapped the Crucible pin, Otho remembered that the elders’ word “Wyrdmark” named the most sacred place his people keep, a stone circle deep in the Dreadfen Delta, and that they said there were others, far away.</p></div></article><article class="card" id="the-crucible-from-the-tarbraaks" data-k="the crucible, from the tarbraaks brackenwatch · stormcrest 4–12  dame vera tarbraak’s scouting map covers a mission three years ago. past the line her scouts stopped: “the ground past that line doesn’t behave the way ground should. compasses drift. fire burns without fuel. the light does strange things.” her party began bickering, then arguing, then threatening one another. the solresti name is xakh’yrren, “flame’s mouth.” the tribes ran trials of adulthood there for centuries, and “about twenty years ago, all those who attempted the trial never returned.” lord grimjaw tarbraak, tapping the scorched interior of solrest on his map: “they’re coming from here.” "><h3 class="card-name">The Crucible, from the Tarbraaks</h3><div class="badges"><span class="badge k-said">Spoken</span></div><p class="meta"><span>Brackenwatch</span><span>Stormcrest 4–12</span></p><div class="body"><p>Dame Vera Tarbraak’s scouting map covers a mission three years ago. Past the line her scouts stopped: “The ground past that line doesn’t behave the way ground should. Compasses drift. Fire burns without fuel. The light does strange things.” Her party began bickering, then arguing, then threatening one another. The Solresti name is Xakh’yrren, “Flame’s Mouth.” The tribes ran trials of adulthood there for centuries, and “about twenty years ago, all those who attempted the trial never returned.” Lord Grimjaw Tarbraak, tapping the scorched interior of Solrest on his map: “They’re coming from here.”</p></div></article><article class="card" id="the-twain-and-the-wyrdmarks" data-k="the twain and the wyrdmarks otho’s village · stormcrest 12–14  the root and the reed, who surrendered their birth names, saw otho’s eyes. the root named vel’asha’rin: “the infinite twofold. the golden eagle and the silver stag.” 
+ 
+ 
+ the stone circle is what the twain’s ancestors called a &quot;wyrdmark: a place where the power of vel’asha’rin is anchored to the earth.” a warden usually guards it, but it has withdrawn and not been seen in at least a decade. 
+ 
+ 
+ “twenty-five years ago... the sky broke open and wept uncountable colors.” since then the land “forgets itself, in small ways, and then remembers, but remembers wrong.” 
+ 
+ 
+ the crucible “belongs to another of the old powers.” the genesis womb lies in amberfell “beneath the waters of lake amberliss, in a cavern that was once reachable but whose entrance has been lost to time.” the twain do not know what has befallen either. 
+ 
+ 
+ twenty years ago they sent a hunter to the crucible alone. he returned with “blood behind his eyes” and “a savagery that did not belong to him,” and was put down. the root: “the corruption at that site can take root in a person.” 
+ 
+ 
+ the root told the story of arun’sooth, who “stood against vash’tar’melos, the corrupting flame,” and named otho as the one it was waiting for. “the story of arun’sooth is not finished,” and “a hunt can fail.” 
+ 
+ 
+ “some time ago, a woman came to the village. we did not know her, though she did not come as a stranger.” the reed: “you and your companions may walk with more allies than you see.” 
+ 
+ "><h3 class="card-name">The Twain and the Wyrdmarks</h3><div class="badges"><span class="badge k-said">Spoken</span></div><p class="meta"><span>Otho’s village</span><span>Stormcrest 12–14</span></p><div class="body"><p>The Root and the Reed, who surrendered their birth names, saw Otho’s eyes. The Root named Vel’asha’rin: “The Infinite Twofold. The golden eagle and the silver stag.”</p>
+<ul>
+<li>
+<p>The Stone Circle is what the Twain’s ancestors called a "Wyrdmark: a place where the power of Vel’asha’rin is anchored to the earth.” A Warden usually guards it, but it has withdrawn and not been seen in at least a decade.</p>
+</li>
+<li>
+<p>“Twenty-five years ago... the sky broke open and wept uncountable colors.” Since then the land “forgets itself, in small ways, and then remembers, but remembers wrong.”</p>
+</li>
+<li>
+<p>The Crucible “belongs to another of the old powers.” The Genesis Womb lies in Amberfell “beneath the waters of Lake Amberliss, in a cavern that was once reachable but whose entrance has been lost to time.” The Twain do not know what has befallen either.</p>
+</li>
+<li>
+<p>Twenty years ago they sent a hunter to the Crucible alone. He returned with “blood behind his eyes” and “a savagery that did not belong to him,” and was put down. The Root: “the corruption at that site can take root in a person.”</p>
+</li>
+<li>
+<p>The Root told the story of Arun’sooth, who “stood against Vash’tar’melos, the Corrupting Flame,” and named Otho as the one it was waiting for. “The story of Arun’sooth is not finished,” and “a hunt can fail.”</p>
+</li>
+<li>
+<p>“Some time ago, a woman came to the village. We did not know her, though she did not come as a stranger.” The Reed: “You and your companions may walk with more allies than you see.”</p>
+</li>
+</ul></div></article><article class="card" id="the-echo-files" data-k="the echo files meredith and tomás, in the new trophy room · emberfall 6–9  meredith sorts echoes into four categories: ambient, artifact, bestial, incarnate. the bestial stack is “noticeably thicker” and the count is “up sharply the last two years.” the incarnate folder is a single sheet: “people. no official records of any, all of it noted as hearsay or confused and scared people.” tomás: “twenty-five years of record-keeping. one confirmed incarnate case.” and: “either that’s the rarest thing in medir, or someone else is finding the rest of them and not telling us.” "><h3 class="card-name">The Echo files</h3><div class="badges"><span class="badge k-said">Spoken</span></div><p class="meta"><span>Meredith and Tomás, in the new Trophy Room</span><span>Emberfall 6–9</span></p><div class="body"><p>Meredith sorts Echoes into four categories: Ambient, Artifact, Bestial, Incarnate. The Bestial stack is “noticeably thicker” and the count is “up sharply the last two years.” The Incarnate folder is a single sheet: “People. No official records of any, all of it noted as hearsay or confused and scared people.” Tomás: “Twenty-five years of record-keeping. One confirmed Incarnate case.” And: “Either that’s the rarest thing in Medir, or someone else is finding the rest of them and not telling us.”</p></div></article></div>
+<div class="tab-panel" id="tab-faithful"><div class="group-head"><h2>The Faithful</h2></div><article class="card" id="the-prayer-scroll" data-k="the prayer scroll silverwood road, taken from fallen cultists · solargold 11  written in common, rolled and sealed with eye-marked wax. the script is precise and almost mechanical. a circle of eye symbols surrounds a larger central eye at the foot of the page. 
+ 
+ “blessed are the heralds, who reveal the truth of everything... the will of the ten thousand-colored eye... we do not question, for questioning is doubt... blessed are we who serve in radiant obedience.” 
+ "><h3 class="card-name">The prayer scroll</h3><div class="badges"><span class="badge k-doc">Scroll</span></div><p class="meta"><span>Silverwood road, taken from fallen cultists</span><span>Solargold 11</span></p><div class="body"><p>Written in Common, rolled and sealed with eye-marked wax. The script is precise and almost mechanical. A circle of eye symbols surrounds a larger central eye at the foot of the page.</p>
+<blockquote>
+<p>“Blessed are the Heralds, who reveal the truth of everything... the will of the Ten Thousand-Colored Eye... We do not question, for questioning is doubt... Blessed are we who serve in radiant obedience.”</p>
+</blockquote></div></article><article class="card" id="faithful-of-the-flame-crowned-herald-s-journal" data-k="faithful of the flame-crowned herald&#x27;s journal a sealed tin in a satchel beneath the best bedroll in the camp on the teeth · stormcrest 15–20  written in common in a hand that starts careful and deteriorates. some pages are illegible. 
+ 
+  early entries:  marek was hired in shimmerport with a group of others—guides, porters, a few sell-swords, and a cartographer. standard desert contract, good pay, no questions. he notes the employer never showed his face during the hiring. the work was arranged through intermediaries—you realize from the descriptions that they’re the ten-thousand colored eye cultists, though marek didn’t understand that based on his writing. the first time he met the man in charge was two weeks into the desert travel, when their escort delivered them to a forward camp. marek describes him only as “tall, regal, with hair made of flames.” he notes that the man spoke common with an accent he couldn’t place, and left with his retinue ahead of their group. 
+  middle entries:  the company traveled west, away from anmar’s gift, into open desert with no landmarks. marek knew this stretch—he’d guided caravans near the edges of it—but they pushed deeper than he’d ever gone. the air changed and got hotter, even moreso than normal desert heat. then the sand started to change color, as if it was being burnt by roasting in the intense heat. he writes about his chest feeling tight, about a smell like hot iron and old blood. the animals refused to go further once the sand started turning hard, like it was baked clay. the horses screamed and had to be blindfolded and led. one of the mules bit through its lead rope and bolted back into the desert. 
+  late entries:  the group split. most continued toward what marek now calls the crucible—he picked the name up from the soldiers. marek and a small party were sent to what you realize is the teeth to find and prepare a supply route. the herald, as marek now calls him, wanted a way to avoid having to go through bramwater or the mountains, hopefully shortening lead times. the last few entries are short. the weather turned. two of the party died on the third island—exposure and a fall. marek and the only sellsword left both ran out of water on the fourth. 
+ "><h3 class="card-name">Faithful of the Flame-Crowned Herald's journal</h3><div class="badges"><span class="badge k-doc">Journal</span></div><p class="meta"><span>A sealed tin in a satchel beneath the best bedroll in the camp on The Teeth</span><span>Stormcrest 15–20</span></p><div class="body"><p>Written in Common in a hand that starts careful and deteriorates. Some pages are illegible.</p>
+<blockquote>
+<p><strong>Early entries:</strong> Marek was hired in Shimmerport with a group of others—guides, porters, a few sell-swords, and a cartographer. Standard desert contract, good pay, no questions. He notes the employer never showed his face during the hiring. The work was arranged through intermediaries—you realize from the descriptions that they’re the Ten-Thousand Colored Eye cultists, though Marek didn’t understand that based on his writing. The first time he met the man in charge was two weeks into the desert travel, when their escort delivered them to a forward camp. Marek describes him only as “tall, regal, with hair made of flames.” He notes that the man spoke Common with an accent he couldn’t place, and left with his retinue ahead of their group.</p>
+<p><strong>Middle entries:</strong> The company traveled west, away from Anmar’s Gift, into open desert with no landmarks. Marek knew this stretch—he’d guided caravans near the edges of it—but they pushed deeper than he’d ever gone. The air changed and got hotter, even moreso than normal desert heat. Then the sand started to change color, as if it was being burnt by roasting in the intense heat. He writes about his chest feeling tight, about a smell like hot iron and old blood. The animals refused to go further once the sand started turning hard, like it was baked clay. The horses screamed and had to be blindfolded and led. One of the mules bit through its lead rope and bolted back into the desert.</p>
+<p><strong>Late entries:</strong> The group split. Most continued toward what Marek now calls The Crucible—he picked the name up from the soldiers. Marek and a small party were sent to what you realize is The Teeth to find and prepare a supply route. The Herald, as Marek now calls him, wanted a way to avoid having to go through Bramwater or the mountains, hopefully shortening lead times. The last few entries are short. The weather turned. Two of the party died on the third island—exposure and a fall. Marek and the only sellsword left both ran out of water on the fourth.</p>
+</blockquote></div></article><article class="card" id="the-dead-man-s-notebook" data-k="the dead man’s notebook old fighting pit outside corsair’s reach · emberfall 9–13  a middle-aged man in road-worn clothes lay dead in the alcove behind the feeding hatch, struck across the chest and throat by something with large sharp claws. he wore a brass pendant of an open eye inside a chain-link circle. his satchel held a notebook in common. 
+ 
+  early entry:  the echo opened, above the old arena, just like i thought it would. the feeling was the same as the last time—the pressure behind the eyes, the hum in the jaw. the eye sees what we cannot. what came through this time was unlike anything i have encountered. six different creatures of three different species. large. powerful. angry. i must take time to study them. 
+  mid-journal:  of the three types of beasts, i have found the large beasts with the horns to be the most amenable. the larger of the two is the most docile, and although it will not eat from my hand, it recognizes that when i approach the bars of its cage that means food is coming, and stands an appropriate distance away. these beasts seem to accept raw meat in addition to roughage. 
+ i believe these beasts were kept in cages and darkness for a long time before arriving in our world. at times, they rampage in their holdings, and i presume it is the fury of something caged that has been caged again, and i am sorry for that. i have explained to it that this containment is temporary, although i know it doesn’t understand me. when the eye opens fully, there will be no more cages. 
+  later:  i have been thinking about selection. why these three? the eye does not act on randomness. it selects. i am more certain of this now than when i began my research years ago. all three bear the marks of prior captivity, such as scars from restraints and behavioral patterns consistent with creatures trained to fight on command. they were weapons in whatever world they came from. they were used. 
+ for these fighting beasts to be put into a fighting arena in medir goes beyond mere coincidence. this, in combination with the more stable signature of the vivid energy surrounding them, leads me to believe that the entities brought to medir possess a stronger physical tether to our realm under the correct circumstances. i must verify this hypothesis—i will petition the herald to open another echo for observation. this evidence won’t satisfy her, however, so i’ll need to gather more before i can return. 
+  final:  the tall, insectile ones are more intelligent than i first believed. the one with the greener skin watches me the way i’ve been watching it. it even seems to be studying the echo at times. it is learning my routines. i think it understands that i feed it. i do not think it is grateful. 
+ i must repair the partition on the western pen. the feline beasts have been testing it. 
+ "><h3 class="card-name">The dead man’s notebook</h3><div class="badges"><span class="badge k-doc">Journal</span></div><p class="meta"><span>Old fighting pit outside Corsair’s Reach</span><span>Emberfall 9–13</span></p><div class="body"><p>A middle-aged man in road-worn clothes lay dead in the alcove behind the feeding hatch, struck across the chest and throat by something with large sharp claws. He wore a brass pendant of an open eye inside a chain-link circle. His satchel held a notebook in Common.</p>
+<blockquote>
+<p><strong>Early entry:</strong> The Echo opened, above the old arena, just like I thought it would. The feeling was the same as the last time—the pressure behind the eyes, the hum in the jaw. The Eye sees what we cannot. What came through this time was unlike anything I have encountered. Six different creatures of three different species. Large. Powerful. Angry. I must take time to study them.</p>
+<p><strong>Mid-journal:</strong> Of the three types of beasts, I have found the large beasts with the horns to be the most amenable. The larger of the two is the most docile, and although it will not eat from my hand, it recognizes that when I approach the bars of its cage that means food is coming, and stands an appropriate distance away. These beasts seem to accept raw meat in addition to roughage.</p>
+<p>I believe these beasts were kept in cages and darkness for a long time before arriving in our world. At times, they rampage in their holdings, and I presume it is the fury of something caged that has been caged again, and I am sorry for that. I have explained to it that this containment is temporary, although I know it doesn’t understand me. When the Eye opens fully, there will be no more cages.</p>
+<p><strong>Later:</strong> I have been thinking about selection. Why these three? The Eye does not act on randomness. It selects. I am more certain of this now than when I began my research years ago. All three bear the marks of prior captivity, such as scars from restraints and behavioral patterns consistent with creatures trained to fight on command. They were weapons in whatever world they came from. They were used.</p>
+<p>For these fighting beasts to be put into a fighting arena in Medir goes beyond mere coincidence. This, in combination with the more stable signature of the Vivid Energy surrounding them, leads me to believe that the entities brought to Medir possess a stronger physical tether to our realm under the correct circumstances. I must verify this hypothesis—I will petition the Herald to open another Echo for observation. This evidence won’t satisfy her, however, so I’ll need to gather more before I can return.</p>
+<p><strong>Final:</strong> The tall, insectile ones are more intelligent than I first believed. The one with the greener skin watches me the way I’ve been watching it. It even seems to be studying the Echo at times. It is learning my routines. I think it understands that I feed it. I do not think it is grateful.</p>
+<p>I must repair the partition on the western pen. The feline beasts have been testing it.</p>
+</blockquote></div></article><article class="card" id="vayne-s-journal" data-k="vayne’s journal kokū-in, on vayne’s body · emberfall 21  a stitched pocket-book with an oilcloth cover, in common with letterforms wrong in a way nobody can describe. each entry is followed by a sketch. 
+ 
+  day 1.  the tear opened above me and not in front of me, which is not how it is done at home. i came down eleven feet into standing water. the grass under it was dead in a circle forty paces across. the air tasted of hot metal for two hours after. i have my weapons, my coat, this book, and nothing else. 
+  a circle drawn with a compass, a standing figure at its edge for scale, the numbers eleven and forty written beside it. no creature.  
+  day 4.  one. it came out of the reeds on five legs. it bled and then the blood went upward. whatever this place is, it has the same disease. that is a mercy of a kind. the only thing keeping me upright is that the work does not change. rid this world of what afflicts it. any world i am in. 
+  a low four-legged shape seen from sixty paces or so, the fifth limb coming off the spine and twice as long as the others so that it reaches the ground. reeds behind it.  
+  day 11.  two, three, four. traded some silver bolts for bread and a bed. the coin here has a lion on it. nobody has heard of my country, so i stopped asking after the second try. a wheelwright showed me a map he had, and it was not familiar. 
+  sketches of three creatures that you’ve never seen before. then, the wheelwright’s map, copied out. three large landmasses, none labelled.  
+  day 19.  a man on the coast road who came through the same way i did, out of somewhere else again, eleven years ago. he has a wife here and two children and asked me not to write his name down in exchange for new shoes. i took the shoes, though i will have to check whether he and his children have the affliction before i can be certain they may stay alive. 
+  a man’s face, three-quarter view, drawn with more care than anything before it. beard, a scar through one eyebrow, shoes drawn in particular detail. unnumbered.  
+  stormcrest 11.  five. learned their calendar. twelve months, twenty-eight days each, following the moon’s cycles perfectly. five as of today. i believe a woman was watching me today when i went into town, though she did not approach. 
+  an upright creature covered in what looks to be robes or cloth, with the only thing visible being a gaping hole for a mouth. next to it, an upright figure in a simple robe, the face left blank.  
+  stormcrest 14.  six. there is a bird. four days now, black, and it does not seem to feed. i put a bolt within a hand’s width of it to move it along and it did not even flinch. it seems strange to say, yet it felt... comforting. 
+  another drawing of the upright figure in the simple robe, though this time in greater detail. the face has been drawn in this time, and it looks to be a middle aged human woman. in the corner, a small bird inked in dark black.  
+  stormcrest 27.  the woman comes up from the valley with rice and dried fish and will not take coin. i answered her for an hour tonight, though i cannot remember a single thing i said. i have gone back through it twice and nothing comes up. i will confront her as soon as i have tracked her down. 
+  the woman’s robes are in more detail, and there is a drawing of a pendant around her neck—on it is an eye with wings on either side. the face is begun and left halfway through, the ink stops mid-stroke.  
+  emberfall 4.  eight and nine. the woman has shown me her work, and i must admit, i’m impressed. i’ve decided to work with her for now. i’m sleeping less, yet working more. this is the fastest i have ever moved and i have never been this certain. everything i look at, i can see the rot in it. 
+  two figures, both are plainly people. they’re not drawn in great detail, but you can tell one is a younger man and the other is older.  
+  emberfall 9.  ten. the shoe-maker, on the road below the shrine, forty years old or thereabouts. the affliction was in him deep. 
+  a man in a leather apron with a mallet through his belt, a beard, and a scar through one eyebrow, drawn from the front.  
+  emberfall 11.  i woke up to the bird back again, with more instructions. 
+  the bird again, larger, pressed hard enough that the ink has spread at the edges. the eye contains two pupils.  
+  (no date.)  i am to wait at the temple. those with the deepest rot will meet me there. it is time to purge them of their evil. 
+  blank.  
+ "><h3 class="card-name">Vayne’s journal</h3><div class="badges"><span class="badge k-doc">Journal</span></div><p class="meta"><span>Kokū-in, on Vayne’s body</span><span>Emberfall 21</span></p><div class="body"><p>A stitched pocket-book with an oilcloth cover, in Common with letterforms wrong in a way nobody can describe. Each entry is followed by a sketch.</p>
+<blockquote>
+<p><strong>Day 1.</strong> The tear opened above me and not in front of me, which is not how it is done at home. I came down eleven feet into standing water. The grass under it was dead in a circle forty paces across. The air tasted of hot metal for two hours after. I have my weapons, my coat, this book, and nothing else.</p>
+<p><em>A circle drawn with a compass, a standing figure at its edge for scale, the numbers eleven and forty written beside it. No creature.</em></p>
+<p><strong>Day 4.</strong> One. It came out of the reeds on five legs. It bled and then the blood went upward. Whatever this place is, it has the same disease. That is a mercy of a kind. The only thing keeping me upright is that the work does not change. Rid this world of what afflicts it. Any world I am in.</p>
+<p><em>A low four-legged shape seen from sixty paces or so, the fifth limb coming off the spine and twice as long as the others so that it reaches the ground. Reeds behind it.</em></p>
+<p><strong>Day 11.</strong> Two, three, four. Traded some silver bolts for bread and a bed. The coin here has a lion on it. Nobody has heard of my country, so I stopped asking after the second try. A wheelwright showed me a map he had, and it was not familiar.</p>
+<p><em>Sketches of three creatures that you’ve never seen before. Then, the wheelwright’s map, copied out. Three large landmasses, none labelled.</em></p>
+<p><strong>Day 19.</strong> A man on the coast road who came through the same way I did, out of somewhere else again, eleven years ago. He has a wife here and two children and asked me not to write his name down in exchange for new shoes. I took the shoes, though I will have to check whether he and his children have the affliction before I can be certain they may stay alive.</p>
+<p><em>A man’s face, three-quarter view, drawn with more care than anything before it. Beard, a scar through one eyebrow, shoes drawn in particular detail. Unnumbered.</em></p>
+<p><strong>Stormcrest 11.</strong> Five. Learned their calendar. Twelve months, twenty-eight days each, following the moon’s cycles perfectly. Five as of today. I believe a woman was watching me today when I went into town, though she did not approach.</p>
+<p><em>An upright creature covered in what looks to be robes or cloth, with the only thing visible being a gaping hole for a mouth. Next to it, an upright figure in a simple robe, the face left blank.</em></p>
+<p><strong>Stormcrest 14.</strong> Six. There is a bird. Four days now, black, and it does not seem to feed. I put a bolt within a hand’s width of it to move it along and it did not even flinch. It seems strange to say, yet it felt... comforting.</p>
+<p><em>Another drawing of the upright figure in the simple robe, though this time in greater detail. The face has been drawn in this time, and it looks to be a middle aged human woman. In the corner, a small bird inked in dark black.</em></p>
+<p><strong>Stormcrest 27.</strong> The woman comes up from the valley with rice and dried fish and will not take coin. I answered her for an hour tonight, though I cannot remember a single thing I said. I have gone back through it twice and nothing comes up. I will confront her as soon as I have tracked her down.</p>
+<p><em>The woman’s robes are in more detail, and there is a drawing of a pendant around her neck—on it is an eye with wings on either side. The face is begun and left halfway through, the ink stops mid-stroke.</em></p>
+<p><strong>Emberfall 4.</strong> Eight and Nine. The woman has shown me her work, and I must admit, I’m impressed. I’ve decided to work with her for now. I’m sleeping less, yet working more. This is the fastest I have ever moved and I have never been this certain. Everything I look at, I can see the rot in it.</p>
+<p><em>Two figures, both are plainly people. They’re not drawn in great detail, but you can tell one is a younger man and the other is older.</em></p>
+<p><strong>Emberfall 9.</strong> Ten. The shoe-maker, on the road below the shrine, forty years old or thereabouts. The affliction was in him deep.</p>
+<p><em>A man in a leather apron with a mallet through his belt, a beard, and a scar through one eyebrow, drawn from the front.</em></p>
+<p><strong>Emberfall 11.</strong> I woke up to the bird back again, with more instructions.</p>
+<p><em>The bird again, larger, pressed hard enough that the ink has spread at the edges. The eye contains two pupils.</em></p>
+<p><strong>(No date.)</strong> I am to wait at the temple. Those with the deepest rot will meet me there. It is time to purge them of their evil.</p>
+<p><em>Blank.</em></p>
+</blockquote></div></article><article class="card" id="the-hand-s-packet" data-k="the hand’s packet kokū-in, in a flat lacquered case · emberfall 21  four papers in infernal with no covers or binding. three are missives headed “for the hand at kuromori.” the fourth is the hand’s working sheet. 
+ 
+  i.  the woman dark-skinned woman with the golden tattoos is a matter for the herald himself, and no cell has authority to act on her. she is not to be watched, not to be followed, and not to be named in writing. 
+ if she comes to you, you give her what she asks for, and send word the same night to the herald. 
+  by the herald’s word. burn on reading.  
+  ii.  the herald reminds the cells that the nine are not gods. they are not the eye and they are not the ascendants. nothing prays to them and nothing is owed them. they were set around the eye the way bars are set around a beast. 
+ a bar holds because it exists; where a name is spoken, the bar it belongs to stands. where the name is gone from every mouth and every page, that bar is not broken, it is simply no longer there. 
+ your mission remains clear. emergence is on the horizon. 
+  by the herald’s word. burn on reading.  
+  iii.  this is the third correction sent to you this year. it is not burned on reading. it is to be kept, signed, and given back to the courier at the earliest convenience. 
+ you are reminded that echo-borne are eliminated as your training had set out. speaking up or causing unrest, immediately. keeping to themselves or otherwise lying low, at your earliest convenience. special orders from the herald override both. 
+ you are reminded that no one taken living is taken a second time. you know as well as anyone why. a man opened once walks home the same evening, sits down to his supper, and cannot tell you a thing was ever done to him. 
+ you had the woman at sawabe opened twice. she is now broken past any use and there is no fixing her, and now that village knows the road does something to the people who walk it. sawabe was a rich source and it is closed to us now. 
+ furthermore, your posting is changed. you will go to kokū-in and you will stay there. 
+ there is an echo-borne woman keeping the highlands around that temple. she calls herself vayne. the herald has looked at her himself and wants her whole, willing, and in the faith. he judges her worth more to us than any three cells in the province, and i am told to write that down so you understand what is being handed to you. 
+ you will feed her, you will keep her comfortable, and you will not put your rules on her, because she will not heed them, and you are not to test it. point her at what needs eliminating and she will go. 
+ two of the herald’s own will come to you and remain with you to fill you in further. they are not yours to direct beyond what is already written here. take what they tell you as though it came from him. 
+  by the herald’s word.  
+ 
+  the working sheet, persons to eliminate.  struck-through entries are crossed out on the sheet. 
+ 
+ 
+  shoe-maker, road below the shrine, approximately forty years of age. echo-borne. little to no threat, but eliminate him at the earliest convenience.  
+ 
+ 
+  master yamamuro togeashi, tiger clan martial historian. collecting information on vanished monasteries and practices. eliminate at once and destroy his archive.  
+ 
+ 
+  man in the highlands east of kiriyado, approximately fifty years of age. echo-borne. keeps to himself in the remote forests, has spoken to no one as of yet. sleeps armed. eliminate when he can be reached without difficulty.  
+ 
+ 
+ human female godomichi prodigy. echo-borne. tracked as far as the ku island and lost inside a week of her landing. two men were sent after her, only one came back with less info than he had arrived with. i want trackers raised in ku. 
+ 
+ 
+  man near sekimachi, approximately twenty-five years of age. echo-borne, and very lately. asking locals for roads and towns that are not on any map, and giving his own name freely to all of them. eliminate at once.  
+ 
+ 
+  persons to watch  
+ 
+ 
+ renjiro kurogami, the tea-house in jinzaikei. sells to everyone, ours included. nothing proven. 
+ 
+ 
+ tomoe dagaki, apprentice to master togeashi, tiger clan martial historian. unknown if she is following her master’s path; she left for medir and hasn’t been seen since the attack orchestrated on her ship. 
+ 
+ 
+ the violet-skinned tiefling woman traveling with the human woman of frostveil. they know they are watched, and seem to be choosing when to be seen. high priority. 
+ 
+ 
+ whatever lives at the windweaver’s pillar. no cell is to engage. 
+ 
+ 
+  feedings  
+ 
+ 
+ eleven out of sawabe, taken living. two of those are down to nothing and are to be struck off if encountered again. 
+ 
+ 
+ nine out of the dogyo (the chi clan’s fishing village on the east face), taken living. 
+ 
+ 
+ six travelers, taken living. 
+ 
+ "><h3 class="card-name">The Hand’s packet</h3><div class="badges"><span class="badge k-doc">Orders</span></div><p class="meta"><span>Kokū-in, in a flat lacquered case</span><span>Emberfall 21</span></p><div class="body"><p>Four papers in Infernal with no covers or binding. Three are missives headed “For the Hand at Kuromori.” The fourth is the Hand’s working sheet.</p>
+<blockquote>
+<p><strong>i.</strong> The woman dark-skinned woman with the golden tattoos is a matter for the Herald himself, and no cell has authority to act on her. She is not to be watched, not to be followed, and not to be named in writing.</p>
+<p>If she comes to you, you give her what she asks for, and send word the same night to the Herald.</p>
+<p><em>By the Herald’s word. Burn on reading.</em></p>
+<p><strong>ii.</strong> The Herald reminds the cells that the nine are not gods. They are not the Eye and they are not the Ascendants. Nothing prays to them and nothing is owed them. They were set around the Eye the way bars are set around a beast.</p>
+<p>A bar holds because it exists; where a name is spoken, the bar it belongs to stands. Where the name is gone from every mouth and every page, that bar is not broken, it is simply no longer there.</p>
+<p>Your mission remains clear. Emergence is on the horizon.</p>
+<p><em>By the Herald’s word. Burn on reading.</em></p>
+<p><strong>iii.</strong> This is the third correction sent to you this year. It is not burned on reading. It is to be kept, signed, and given back to the courier at the earliest convenience.</p>
+<p>You are reminded that Echo-borne are eliminated as your training had set out. Speaking up or causing unrest, immediately. Keeping to themselves or otherwise lying low, at your earliest convenience. Special orders from the Herald override both.</p>
+<p>You are reminded that no one taken living is taken a second time. You know as well as anyone why. A man opened once walks home the same evening, sits down to his supper, and cannot tell you a thing was ever done to him.</p>
+<p>You had the woman at Sawabe opened twice. She is now broken past any use and there is no fixing her, and now that village knows the road does something to the people who walk it. Sawabe was a rich source and it is closed to us now.</p>
+<p>Furthermore, your posting is changed. You will go to Kokū-in and you will stay there.</p>
+<p>There is an Echo-borne woman keeping the highlands around that temple. She calls herself Vayne. The Herald has looked at her himself and wants her whole, willing, and in the faith. He judges her worth more to us than any three cells in the province, and I am told to write that down so you understand what is being handed to you.</p>
+<p>You will feed her, you will keep her comfortable, and you will not put your rules on her, because she will not heed them, and you are not to test it. Point her at what needs eliminating and she will go.</p>
+<p>Two of the Herald’s own will come to you and remain with you to fill you in further. They are not yours to direct beyond what is already written here. Take what they tell you as though it came from him.</p>
+<p><em>By the Herald’s word.</em></p>
+</blockquote>
+<p><strong>The working sheet, Persons to Eliminate.</strong> Struck-through entries are crossed out on the sheet.</p>
+<ul>
+<li>
+<p><s>Shoe-maker, road below the shrine, approximately forty years of age. Echo-borne. Little to no threat, but eliminate him at the earliest convenience.</s></p>
+</li>
+<li>
+<p><s>Master Yamamuro Togeashi, Tiger clan martial historian. Collecting information on vanished monasteries and practices. Eliminate at once and destroy his archive.</s></p>
+</li>
+<li>
+<p><s>Man in the highlands east of Kiriyado, approximately fifty years of age. Echo-borne. Keeps to himself in the remote forests, has spoken to no one as of yet. Sleeps armed. Eliminate when he can be reached without difficulty.</s></p>
+</li>
+<li>
+<p>Human Female Godomichi Prodigy. Echo-borne. Tracked as far as the Ku island and lost inside a week of her landing. Two men were sent after her, only one came back with less info than he had arrived with. I want trackers raised in Ku.</p>
+</li>
+<li>
+<p><s>Man near Sekimachi, approximately twenty-five years of age. Echo-borne, and very lately. Asking locals for roads and towns that are not on any map, and giving his own name freely to all of them. Eliminate at once.</s></p>
+</li>
+</ul>
+<p><strong>Persons to Watch</strong></p>
+<ul>
+<li>
+<p>Renjiro Kurogami, the tea-house in Jinzaikei. Sells to everyone, ours included. Nothing proven.</p>
+</li>
+<li>
+<p>Tomoe Dagaki, apprentice to Master Togeashi, Tiger clan martial historian. Unknown if she is following her master’s path; she left for Medir and hasn’t been seen since the attack orchestrated on her ship.</p>
+</li>
+<li>
+<p>The violet-skinned tiefling woman traveling with the human woman of Frostveil. They know they are watched, and seem to be choosing when to be seen. High priority.</p>
+</li>
+<li>
+<p>Whatever lives at the Windweaver’s Pillar. No cell is to engage.</p>
+</li>
+</ul>
+<p><strong>Feedings</strong></p>
+<ul>
+<li>
+<p>Eleven out of Sawabe, taken living. Two of those are down to nothing and are to be struck off if encountered again.</p>
+</li>
+<li>
+<p>Nine out of the Dogyo (the Chi clan’s fishing village on the east face), taken living.</p>
+</li>
+<li>
+<p>Six travelers, taken living.</p>
+</li>
+</ul></div></article></div>
+<div class="tab-panel" id="tab-memory"><div class="group-head"><h2>The Memory Echo</h2></div><article class="card" id="the-memory-echo" data-k="the memory echo shared vision · a vivid echo · ambertide 21–22  the vivid echo tears open above you, but instead of creatures or chaos, it pulses with a warm, golden light. reality shifts around you, and suddenly you’re all standing in a shared space that feels like being inside a crystal, watching scenes play out on its faceted walls. "><h3 class="card-name">The Memory Echo</h3><div class="badges"><span class="badge k-vision">Vision</span></div><p class="meta"><span>Shared vision</span><span>A Vivid Echo</span><span>Ambertide 21–22</span></p><div class="body"><p>The Vivid Echo tears open above you, but instead of creatures or chaos, it pulses with a warm, golden light. Reality shifts around you, and suddenly you’re all standing in a shared space that feels like being inside a crystal, watching scenes play out on its faceted walls.</p></div></article><article class="card" id="the-grove-of-song" data-k="the grove of song ambertide 21–22  the crystal shows a moonlit grove. a young gnome woman stands before a circle of gnome children, holding a scepter of polished hazelwood wound with fine copper wire in intricate patterns. the “notes” in the musical staff patterns are actually tiny carved hummingbirds, and the scepter hums with impossible melodies. she has fizz’s distinctive eyes, nose, and chin—the family resemblance is unmistakable. 
+  eldera : “magic isn’t chaos, children. it’s a song trying to teach us harmony. the wild surges, the unpredictable flares—that’s just the melody finding its rhythm through us.” 
+ she raises the scepter, and reality seems to bend around the music it produces. flowers bloom in fast-forward, then crystallize into gemstones. the air shimmers with colors that have no names. 
+  children : “yes, miss eldera!” 
+ you realize that the magic eldera is demonstrating predates known spell structures. it’s as if she’s not accessing magic at all, but producing it as a font of pure magical energy itself. 
+  eldera : “we are not masters of this force. we are its instruments. and every instrument must learn to resonate with the greater symphony.” 
+ as the lesson concludes, an adult gnome approaches through the trees. 
+  adult gnome : “miss thistlewood?” 
+  eldera : “yes, what is it?” "><h3 class="card-name">The Grove of Song</h3><div class="badges"><span class="badge k-vision">Vision</span></div><p class="meta"><span>Ambertide 21–22</span></p><div class="body"><p>The crystal shows a moonlit grove. A young gnome woman stands before a circle of gnome children, holding a scepter of polished hazelwood wound with fine copper wire in intricate patterns. The “notes” in the musical staff patterns are actually tiny carved hummingbirds, and the scepter hums with impossible melodies. She has Fizz’s distinctive eyes, nose, and chin—the family resemblance is unmistakable.</p>
+<p><strong>Eldera</strong>: “Magic isn’t chaos, children. It’s a song trying to teach us harmony. The wild surges, the unpredictable flares—that’s just the melody finding its rhythm through us.”</p>
+<p>She raises the scepter, and reality seems to bend around the music it produces. Flowers bloom in fast-forward, then crystallize into gemstones. The air shimmers with colors that have no names.</p>
+<p><strong>Children</strong>: “Yes, Miss Eldera!”</p>
+<p>You realize that the magic Eldera is demonstrating predates known spell structures. It’s as if she’s not accessing magic at all, but producing it as a font of pure magical energy itself.</p>
+<p><strong>Eldera</strong>: “We are not masters of this force. We are its instruments. And every instrument must learn to resonate with the greater symphony.”</p>
+<p>As the lesson concludes, an adult gnome approaches through the trees.</p>
+<p><strong>Adult Gnome</strong>: “Miss Thistlewood?”</p>
+<p><strong>Eldera</strong>: “Yes, what is it?”</p></div></article><article class="card" id="the-village-story" data-k="the village story ambertide 21–22  the crystal shows otho’s village center, where two figures stand before a gathered crowd—an elderly human woman with silver hair and a young human man barely out of his teens. this is the traditional leadership of ancient thornmarch villages: the wise elder and the fresh perspective of youth, always serving together. 
+  elder : “tonight we tell the old story, the true story, passed down through the hunt.” 
+ young co-elder: “long ago, when the world was younger, there came the vash’tar’melos—a creature whose very presence brought blight to all around it.” 
+  elder : “wherever it walked, the earth withered. wherever it rested, nothing would grow again. its essence poisoned the natural order.” 
+ young co-elder: “but the hunters knew what must be done. the arun’sooth tracked the great blight-bringer to its source.” 
+ you know the names spoken—vash’tar’melos and arun’sooth—are primordial words meaning “corrupting flame” and “the hunter” respectively. 
+  elder : “the hunt was long and terrible, but in the end, balance was restored. the arun’sooth quenched the vash’tar’melos, and the cycle continued as it must.” 
+ young co-elder: “we are the children of that hunt. we remember. we preserve the balance.” "><h3 class="card-name">The Village Story</h3><div class="badges"><span class="badge k-vision">Vision</span></div><p class="meta"><span>Ambertide 21–22</span></p><div class="body"><p>The crystal shows Otho’s village center, where two figures stand before a gathered crowd—an elderly human woman with silver hair and a young human man barely out of his teens. This is the traditional leadership of ancient Thornmarch villages: the wise elder and the fresh perspective of youth, always serving together.</p>
+<p><strong>Elder</strong>: “Tonight we tell the old story, the true story, passed down through the hunt.”</p>
+<p>Young Co-Elder: “Long ago, when the world was younger, there came the Vash’tar’melos—a creature whose very presence brought blight to all around it.”</p>
+<p><strong>Elder</strong>: “Wherever it walked, the earth withered. Wherever it rested, nothing would grow again. Its essence poisoned the natural order.”</p>
+<p>Young Co-Elder: “But the hunters knew what must be done. The Arun’sooth tracked the great blight-bringer to its source.”</p>
+<p>You know the names spoken—Vash’tar’melos and Arun’sooth—are Primordial words meaning “Corrupting Flame” and “The Hunter” respectively.</p>
+<p><strong>Elder</strong>: “The hunt was long and terrible, but in the end, balance was restored. The Arun’sooth quenched the Vash’tar’melos, and the cycle continued as it must.”</p>
+<p>Young Co-Elder: “We are the children of that hunt. We remember. We preserve the balance.”</p></div></article><article class="card" id="the-oracle-s-revelation" data-k="the oracle’s revelation ambertide 21–22  reality fractures around you as the oracle appears—not as a distant ascendant, but as a figure of impossible beauty whose face shifts between every possibility that could ever exist. she wears a cloak that seems woven from captured starlight, constellations drifting slowly across its surface. 
+  the oracle  (speaking in each party member’s own internal voice): “daughter of the vividness and prophecies, the time of gentle guidance ends. what comes will test the very foundations of all that you know and are. you have been my instrument since before your first breath; now you must become my voice.” 
+ visions swirl too fast to comprehend: reality tearing, people fleeing, powers stirring, locked chains. 
+  the oracle  (speaking in evessa’s voice at all different ages, from babbling toddler to wheezing elder): “what has been stolen from us all will be returned. those that slumber will awaken. and you...” points directly at evessa “you will help decide whether revelation brings salvation or catastrophe. choose your allies carefully, and your foes even more carefully, for even i cannot see all the paths ahead...” 
+ the oracle raises her hand, and strange symbols of light appear above evessa’s head, speaking words in an ancient, flowing language. 
+ you recognize this as an ancient rite in celestial—evessa is being formally designated as a chosen by the oracle. "><h3 class="card-name">The Oracle’s Revelation</h3><div class="badges"><span class="badge k-vision">Vision</span></div><p class="meta"><span>Ambertide 21–22</span></p><div class="body"><p>Reality fractures around you as the Oracle appears—not as a distant Ascendant, but as a figure of impossible beauty whose face shifts between every possibility that could ever exist. She wears a cloak that seems woven from captured starlight, constellations drifting slowly across its surface.</p>
+<p><strong>The Oracle</strong> (speaking in each party member’s own internal voice): “Daughter of The Vividness and Prophecies, the time of gentle guidance ends. What comes will test the very foundations of all that you know and are. You have been my instrument since before your first breath; now you must become my voice.”</p>
+<p>Visions swirl too fast to comprehend: reality tearing, people fleeing, powers stirring, locked chains.</p>
+<p><strong>The Oracle</strong> (speaking in Evessa’s voice at all different ages, from babbling toddler to wheezing elder): “What has been stolen from us all will be returned. Those that slumber will awaken. And you...” points directly at Evessa “you will help decide whether revelation brings salvation or catastrophe. Choose your allies carefully, and your foes even more carefully, for even I cannot see all the paths ahead...”</p>
+<p>The Oracle raises her hand, and strange symbols of light appear above Evessa’s head, speaking words in an ancient, flowing language.</p>
+<p>You recognize this as an ancient rite in Celestial—Evessa is being formally designated as a Chosen by The Oracle.</p></div></article><article class="card" id="the-eternal-court" data-k="the eternal court ambertide 21–22  the vision shows a vast, impossible space filled with towering shelves that stretch beyond sight, lined with floating spheres of captured light and crystalline formations. a sleek aarakocra whose intelligence blazes in his sharp eyes stands speaking with a younger assistant, both surrounded by what appear to be luminous, geometric patterns floating through the air. 
+  johnhale goldfinch : “the precedent established in the thornmarch mediation clearly demonstrates that property rights must yield to communal necessity during times of crisis, but the implementation requires careful consideration of individual autonomy.” 
+  assistant : “but master goldfinch, how do we balance that against the amberfell agricultural compact? the grain distribution laws seem to contradict—” 
+  johnhale goldfinch : “ah, but you’re missing the underlying principle. the year 1447 marks a crucial transition. after the vividness comes, traditional legal frameworks will be... challenged. we must preserve the essential wisdom in forms that can survive upheaval.” 
+ atticus recognizes the legal discussion as sophisticated and legitimate—these are real principles being debated with genuine expertise. 
+ you realize that 1447 au was the year before the vividness occurred in 1448 au—this conversation is taking place before that world-changing event. 
+ you notice that this space, with its organized collections and study materials, appears to be some kind of vast repository of knowledge—essentially a library of unprecedented scale. 
+  johnhale goldfinch : “the crystalline formations here don’t just store information, my young apprentice—they preserve understanding itself. when the time comes, may wisdom find its way to those who need it most.” "><h3 class="card-name">The Eternal Court</h3><div class="badges"><span class="badge k-vision">Vision</span></div><p class="meta"><span>Ambertide 21–22</span></p><div class="body"><p>The vision shows a vast, impossible space filled with towering shelves that stretch beyond sight, lined with floating spheres of captured light and crystalline formations. A sleek aarakocra whose intelligence blazes in his sharp eyes stands speaking with a younger assistant, both surrounded by what appear to be luminous, geometric patterns floating through the air.</p>
+<p><strong>Johnhale Goldfinch</strong>: “The precedent established in the Thornmarch Mediation clearly demonstrates that property rights must yield to communal necessity during times of crisis, but the implementation requires careful consideration of individual autonomy.”</p>
+<p><strong>Assistant</strong>: “But Master Goldfinch, how do we balance that against the Amberfell Agricultural Compact? The grain distribution laws seem to contradict—”</p>
+<p><strong>Johnhale Goldfinch</strong>: “Ah, but you’re missing the underlying principle. The year 1447 marks a crucial transition. After The Vividness comes, traditional legal frameworks will be... challenged. We must preserve the essential wisdom in forms that can survive upheaval.”</p>
+<p>Atticus recognizes the legal discussion as sophisticated and legitimate—these are real principles being debated with genuine expertise.</p>
+<p>You realize that 1447 AU was the year before The Vividness occurred in 1448 AU—this conversation is taking place before that world-changing event.</p>
+<p>You notice that this space, with its organized collections and study materials, appears to be some kind of vast repository of knowledge—essentially a library of unprecedented scale.</p>
+<p><strong>Johnhale Goldfinch</strong>: “The crystalline formations here don’t just store information, my young apprentice—they preserve understanding itself. When the time comes, may wisdom find its way to those who need it most.”</p></div></article><article class="card" id="the-lightning-summit" data-k="the lightning summit ambertide 21–22  the shizuka-na monastery courtyard appears, filled with monks from different traditions gathered for an important summit. hidden behind a wooden pillar, two teenage girls peek out at the sparring demonstration taking place in the center. one has the unmistakable features and bearing that would grow into master retsujirō. 
+ young retsujirō: “look at their footwork, sumire! the one from our monastery is good, but watch how the visiting monk moves—like he’s part of the lightning itself.” 
+  sumire : “the one claiming to be from windweaver’s pillars? his technique is incredible, but something feels… different about it.” 
+ in the sparring circle, electricity dances around one monk’s hands as he demonstrates lightning-based martial arts, while another monk responds with disciplined fire techniques. 
+ you realize there has never been a monastery called “windweaver’s pillars” in any of the known monastic traditions. 
+ young retsujirō: “i wish i could do that with lightning. all i can manage are these little flames.” she demonstrates a small fire technique, her expression showing clear frustration. “fire is useful, but lightning… that’s something special.” 
+  sumire : “you’re good with fire, though! not everyone can—” 
+ young retsujirō: “but it’s not the same, is it? look how naturally he commands the storm. i spend all this time mastering fire and he just… flows with the lightning like it’s breathing.” 
+ you recognize that young retsujirō’s frustration stems from jealousy—she’s comparing her own abilities unfavorably to the lightning monk’s seemingly effortless mastery. 
+ the lightning monk’s words carry across the courtyard: “the storm teaches differently than rigid forms... lightning cannot be caged—it must be danced with, and it will dance with us in return.” 
+ young retsujirō’s eyes narrow as she watches, a mixture of fascination and resentment in her expression. "><h3 class="card-name">The Lightning Summit</h3><div class="badges"><span class="badge k-vision">Vision</span></div><p class="meta"><span>Ambertide 21–22</span></p><div class="body"><p>The Shizuka-Na monastery courtyard appears, filled with monks from different traditions gathered for an important summit. Hidden behind a wooden pillar, two teenage girls peek out at the sparring demonstration taking place in the center. One has the unmistakable features and bearing that would grow into Master Retsujirō.</p>
+<p>Young Retsujirō: “Look at their footwork, Sumire! The one from our monastery is good, but watch how the visiting monk moves—like he’s part of the lightning itself.”</p>
+<p><strong>Sumire</strong>: “The one claiming to be from Windweaver’s Pillars? His technique is incredible, but something feels… different about it.”</p>
+<p>In the sparring circle, electricity dances around one monk’s hands as he demonstrates lightning-based martial arts, while another monk responds with disciplined fire techniques.</p>
+<p>You realize there has never been a monastery called “Windweaver’s Pillars” in any of the known monastic traditions.</p>
+<p>Young Retsujirō: “I wish I could do that with lightning. All I can manage are these little flames.” She demonstrates a small fire technique, her expression showing clear frustration. “Fire is useful, but lightning… that’s something special.”</p>
+<p><strong>Sumire</strong>: “You’re good with fire, though! Not everyone can—”</p>
+<p>Young Retsujirō: “But it’s not the same, is it? Look how naturally he commands the storm. I spend all this time mastering fire and he just… flows with the lightning like it’s breathing.”</p>
+<p>You recognize that young Retsujirō’s frustration stems from jealousy—she’s comparing her own abilities unfavorably to the lightning monk’s seemingly effortless mastery.</p>
+<p>The lightning monk’s words carry across the courtyard: “The storm teaches differently than rigid forms... Lightning cannot be caged—it must be danced with, and it will dance with us in return.”</p>
+<p>Young Retsujirō’s eyes narrow as she watches, a mixture of fascination and resentment in her expression.</p></div></article><article class="card" id="the-forge-of-endings" data-k="the forge of endings ambertide 21–22  the scene shows an ancient forge where jet’s ancestors work with masterful skill, crafting elaborate weapons, ceremonial armor, and hauntingly beautiful funeral masks. the work is exquisite, each piece a masterwork of artistry and function. 
+  lead smith  (one of jet’s ancestors): “house feloran has commissioned another set—ceremonial blades for their honor guard and three death masks for their fallen champions.” 
+  apprentice : “the detail they want on these masks... it’s like they’re trying to capture the exact moment of glory before death.” 
+  lead smith : “that’s exactly what they want. each mask must show not death itself, but the peak of heroism—the instant when legend is born. house feloran pays well because they understand that true craftsmanship creates immortality.” 
+ the smith carefully shapes an aegis to complement the funeral masks, its obsidian-steel surface flowing like molten metal and liquid shadow, depicting a serene visage caught between triumph and peaceful rest. 
+ you remember that house carmivelle was the ruling house of the ruby cradle before house feloran, but they were exiled for treason against the crown long ago. 
+  lead smith : “when our work is complete, these pieces will outlast the house that commissioned them. that’s the true glory of the forge—we create beauty that transcends those who request it.” 
+ as jet watches, he suddenly realizes something troubling—his family’s history only begins with his grandparents’ forge. everything before that is... blank. 
+ the vision begins to fade peacefully as the forge grows dim. the crystal space around you feels warm and calm, like waking from a pleasant dream as the world you left begins to reappear around you... "><h3 class="card-name">The Forge of Endings</h3><div class="badges"><span class="badge k-vision">Vision</span></div><p class="meta"><span>Ambertide 21–22</span></p><div class="body"><p>The scene shows an ancient forge where Jet’s ancestors work with masterful skill, crafting elaborate weapons, ceremonial armor, and hauntingly beautiful funeral masks. The work is exquisite, each piece a masterwork of artistry and function.</p>
+<p><strong>Lead Smith</strong> (one of Jet’s ancestors): “House Feloran has commissioned another set—ceremonial blades for their honor guard and three death masks for their fallen champions.”</p>
+<p><strong>Apprentice</strong>: “The detail they want on these masks... it’s like they’re trying to capture the exact moment of glory before death.”</p>
+<p><strong>Lead Smith</strong>: “That’s exactly what they want. Each mask must show not death itself, but the peak of heroism—the instant when legend is born. House Feloran pays well because they understand that true craftsmanship creates immortality.”</p>
+<p>The smith carefully shapes an aegis to complement the funeral masks, its obsidian-steel surface flowing like molten metal and liquid shadow, depicting a serene visage caught between triumph and peaceful rest.</p>
+<p>You remember that House Carmivelle was the ruling house of the Ruby Cradle before House Feloran, but they were exiled for treason against the crown long ago.</p>
+<p><strong>Lead Smith</strong>: “When our work is complete, these pieces will outlast the house that commissioned them. That’s the true glory of the forge—we create beauty that transcends those who request it.”</p>
+<p>As Jet watches, he suddenly realizes something troubling—his family’s history only begins with his grandparents’ forge. Everything before that is... blank.</p>
+<p>The vision begins to fade peacefully as the forge grows dim. The crystal space around you feels warm and calm, like waking from a pleasant dream as the world you left begins to reappear around you...</p></div></article><article class="card" id="the-violent-intrusion" data-k="the violent intrusion ambertide 21–22  suddenly, without warning, brilliant light explodes through the shared mindspace. pain lances through everyone’s consciousness as something desperate and powerful tears into your awareness. 
+ flashes of radiance chained in crystalline bonds 
+ a figure of impossible beauty trapped and struggling 
+ golden light writhing against magical restraints 
+ a voice like distant thunder, screaming: 
+ “help... me...” 
+ the vision shatters your shared consciousness like glass. 
+ you all gasp awake, sitting on the ground. above you, the vivid echo is just sealing shut with a soft whisper of displaced air. each of you suddenly realizes you are clutching, wearing, or bearing a magical item that wasn’t there before—solid, real, and thrumming with power. "><h3 class="card-name">The Violent Intrusion</h3><div class="badges"><span class="badge k-vision">Vision</span></div><p class="meta"><span>Ambertide 21–22</span></p><div class="body"><p>Suddenly, without warning, BRILLIANT LIGHT EXPLODES through the shared mindspace. Pain lances through everyone’s consciousness as something desperate and powerful TEARS into your awareness.</p>
+<p>FLASHES OF RADIANCE CHAINED IN CRYSTALLINE BONDS</p>
+<p>A FIGURE OF IMPOSSIBLE BEAUTY TRAPPED AND STRUGGLING</p>
+<p>GOLDEN LIGHT WRITHING AGAINST MAGICAL RESTRAINTS</p>
+<p>A VOICE LIKE DISTANT THUNDER, SCREAMING:</p>
+<p>“HELP... ME...”</p>
+<p>The vision shatters your shared consciousness like glass.</p>
+<p>You all gasp awake, sitting on the ground. Above you, the Vivid Echo is just sealing shut with a soft whisper of displaced air. Each of you suddenly realizes you are clutching, wearing, or bearing a magical item that wasn’t there before—solid, real, and thrumming with power.</p></div></article></div>
+<div class="tab-panel" id="tab-johnhale"><div class="group-head"><h2>Johnhale and the Forgotten Nine</h2></div><article class="card" id="meredith-s-research-on-johnhale-and-the-consilium-memoriae" data-k="meredith’s research on johnhale and the consilium memoriae gilded archive · ambertide 23–24  johnhale goldfinch was a lawyer with an apparently perfect memory who began to &quot;remembered things that never happened” and had “contradictory versions of the same events.” the breakdown came in 1448 au, the vividness year. the family disowned him and he vanished from every record within months, with no death certificate and no grave marker in the family plots. fragments say he founded “some kind of monastery or scholarly retreat” after his exile. 
+ the consilium memoriae stores a memory so it can be “experienced rather than just read.” a low-profile sect of the scholar’s followers makes them. one reference says the sect believes “what is remembered cannot be unmade.” meredith finds no official connection to johnhale and calls the timing of the crystals and his “monastery of memory” “suggestive.” "><h3 class="card-name">Meredith’s research on Johnhale and the Consilium Memoriae</h3><div class="badges"><span class="badge k-said">Spoken</span></div><p class="meta"><span>Gilded Archive</span><span>Ambertide 23–24</span></p><div class="body"><p>Johnhale Goldfinch was a lawyer with an apparently perfect memory who began to "remembered things that never happened” and had “contradictory versions of the same events.” The breakdown came in 1448 AU, the Vividness year. The family disowned him and he vanished from every record within months, with no death certificate and no grave marker in the family plots. Fragments say he founded “some kind of monastery or scholarly retreat” after his exile.</p>
+<p>The Consilium Memoriae stores a memory so it can be “experienced rather than just read.” A low-profile sect of The Scholar’s followers makes them. One reference says the sect believes “what is remembered cannot be unmade.” Meredith finds no official connection to Johnhale and calls the timing of the crystals and his “monastery of memory” “suggestive.”</p></div></article><article class="card" id="atticus-s-father-s-letter" data-k="atticus’s father’s letter delivered by courier, goldfinch crest · ambertide 23–24  
+ atticus, 
+ word has reached us of your involvement in the festival incident and your work with the crown. your mother worries, naturally, but i confess i am... cautiously pleased. this is meaningful work, the sort that matters. 
+ i visited johnhale’s grave yesterday. my brother. strange how he haunts my thoughts lately. we were close once, before his mind... fractured. he used to speak of things he claimed to remember that no one else did. your grandfather thought it was the brilliance of his own mind breaking itself. i thought it was tragedy. 
+ i mention this because i see something of that same brilliance in you, atticus. the cleverness, the way with words. i only hope you apply it more wisely than johnhale did. stay on the path that serves the family name, not one that wanders into shadows. 
+ you’re doing better than i expected, keep it up, son. 
+ —father 
+ "><h3 class="card-name">Atticus’s father’s letter</h3><div class="badges"><span class="badge k-doc">Letter</span></div><p class="meta"><span>Delivered by courier, Goldfinch crest</span><span>Ambertide 23–24</span></p><div class="body"><blockquote>
+<p>Atticus,</p>
+<p>Word has reached us of your involvement in the Festival incident and your work with the Crown. Your mother worries, naturally, but I confess I am... cautiously pleased. This is meaningful work, the sort that matters.</p>
+<p>I visited Johnhale’s grave yesterday. My brother. Strange how he haunts my thoughts lately. We were close once, before his mind... fractured. He used to speak of things he claimed to remember that no one else did. Your grandfather thought it was the brilliance of his own mind breaking itself. I thought it was tragedy.</p>
+<p>I mention this because I see something of that same brilliance in you, Atticus. The cleverness, the way with words. I only hope you apply it more wisely than Johnhale did. Stay on the path that serves the family name, not one that wanders into shadows.</p>
+<p>You’re doing better than I expected, keep it up, son.</p>
+<p>—Father</p>
+</blockquote></div></article><article class="card" id="pelleas-and-the-archive-covenant" data-k="pelleas and the archive covenant tomegrove road · solargold 10–11  pelleas told atticus that johnhale’s research concerned nine entities named in pre-unification records that vanished afterward, and that holding all nine in mind brought on days-long headaches and nosebleeds. eleven or twelve years ago johnhale came to pelleas’s hermitage at night with a chest of documents, said he had been “too visible,” handed over only the cover of  the forgotten nine , and said he was going on to gritvorn and marcus elwood. the covenant is a network of historians who preserve contested records. pelleas said johnhale’s mind fractured in 1448 au, that he began recalling his own childhood two incompatible ways, and that he invented the consilium memoriae devices and kept a personal monastery, the conclave of memory, whose location only johnhale knew. "><h3 class="card-name">Pelleas and the Archive Covenant</h3><div class="badges"><span class="badge k-said">Spoken</span></div><p class="meta"><span>Tomegrove road</span><span>Solargold 10–11</span></p><div class="body"><p>Pelleas told Atticus that Johnhale’s research concerned nine entities named in pre-unification records that vanished afterward, and that holding all nine in mind brought on days-long headaches and nosebleeds. Eleven or twelve years ago Johnhale came to Pelleas’s hermitage at night with a chest of documents, said he had been “too visible,” handed over only the cover of <em>The Forgotten Nine</em>, and said he was going on to Gritvorn and Marcus Elwood. The Covenant is a network of historians who preserve contested records. Pelleas said Johnhale’s mind fractured in 1448 AU, that he began recalling his own childhood two incompatible ways, and that he invented the Consilium Memoriae devices and kept a personal monastery, the Conclave of Memory, whose location only Johnhale knew.</p></div></article><article class="card" id="marcus-elwood-s-letter" data-k="marcus elwood’s letter the sage’s rest, gritvorn · solargold 22–23  marcus elwood’s skeleton sat at his desk in grey robes, wearing a consilium memoriae on a silver chain, with preservation magic keeping the room as it was. his letter: 
+ 
+ to whoever stands with truth— 
+ if you’ve found this, then the archive covenant endures. that brings me comfort in these final hours. 
+ i am marcus elwood, and i choose to die here, in this room, surrounded by what i have loved most—knowledge, carefully preserved. better this gentle poison than whatever blade or fire those who fear the truth might have brought to my door. 
+ i do not know who hunts us. i have my suspicions—not of faces or names, but of types. there is rot in medir’s highest places. i have seen patterns in what is forbidden, in what questions bring swift retribution, in whose names must not be questioned. 
+ johnhale knew. that brilliant, broken man saw what was taken, and it shattered his mind trying to hold two truths at once—what he remembered and what he was told to remember. i last saw him three years past, and he spoke of finding sanctuary. a place where memory could not be altered. he would not tell me where, only repeating a single phrase: 
+ memory will speak when the before becomes now once more. 
+ question what cannot be questioned. record what must be recorded. 
+ may memory endure, 
+marcus elwood 
+last keeper of the sage’s rest 
+ crownglow 17, 1470 au 
+ 
+ the consilium warmed when the last line was read aloud. "><h3 class="card-name">Marcus Elwood’s letter</h3><div class="badges"><span class="badge k-doc">Letter</span></div><p class="meta"><span>The Sage’s Rest, Gritvorn</span><span>Solargold 22–23</span></p><div class="body"><p>Marcus Elwood’s skeleton sat at his desk in grey robes, wearing a Consilium Memoriae on a silver chain, with preservation magic keeping the room as it was. His letter:</p>
+<blockquote>
+<p>To whoever stands with truth—</p>
+<p>If you’ve found this, then the Archive Covenant endures. That brings me comfort in these final hours.</p>
+<p>I am Marcus Elwood, and I choose to die here, in this room, surrounded by what I have loved most—knowledge, carefully preserved. Better this gentle poison than whatever blade or fire those who fear the truth might have brought to my door.</p>
+<p>I do not know who hunts us. I have my suspicions—not of faces or names, but of types. There is rot in Medir’s highest places. I have seen patterns in what is forbidden, in what questions bring swift retribution, in whose names must not be questioned.</p>
+<p>Johnhale knew. That brilliant, broken man saw what was taken, and it shattered his mind trying to hold two truths at once—what he remembered and what he was told to remember. I last saw him three years past, and he spoke of finding sanctuary. A place where memory could not be altered. He would not tell me where, only repeating a single phrase:</p>
+<p>Memory will speak when the before becomes now once more.</p>
+<p>Question what cannot be questioned. Record what must be recorded.</p>
+<p>May memory endure,<br />
+Marcus Elwood<br />
+Last Keeper of the Sage’s Rest</p>
+<p>Crownglow 17, 1470 AU</p>
+</blockquote>
+<p>The Consilium warmed when the last line was read aloud.</p></div></article><article class="card" id="the-forgotten-nine" data-k="_the forgotten nine_ cover from the hermitage fire · front matter from the sage’s rest, solargold 22–23  the cover of  the forgotten nine  by johnhale goldfinch was recovered from the hermitage fire. the front matter was found at the sage’s rest: 
+ 
+  dedication.  to those who remember what cannot be forgotten, to those who seek what must not be found, to those who speak what should not be spoken, and to the nine, whose names i now return. 
+  introduction.  there are gaps in our history. not the natural erosion of time, but deliberate excisions—surgical removals of knowledge that leave behind only the faint scars of absence. in every realm, in every archive, in every oral tradition, i have found the same pattern: nine absences where something once stood. 
+ this work seeks to name what has been unnamed, to remember what has been forgotten, to reconstruct what has been deliberately destroyed. —j.g. 
+ 
+ the table of contents lists, with page numbers: 
+ 
+ 
+ i. the first of all mothers 
+ 
+ 
+ ii. the sovereign king of endings 
+ 
+ 
+ iii. the unbroken song of creation 
+ 
+ 
+ iv. the infinitely boundless pair 
+ 
+ 
+ v. the zephyr between horizons 
+ 
+ 
+ vi. the cairn of endless ages 
+ 
+ 
+ vii. the tide of ceaseless forms 
+ 
+ 
+ viii. the untamed feral flame 
+ 
+ 
+ ix. the stillness beneath the shadows 
+ 
+ "><h3 class="card-name"><em>The Forgotten Nine</em></h3><div class="badges"><span class="badge k-doc">Book</span></div><p class="meta"><span>Cover from the hermitage fire</span><span>Front matter from the Sage’s Rest, Solargold 22–23</span></p><div class="body"><p>The cover of <em>The Forgotten Nine</em> by Johnhale Goldfinch was recovered from the hermitage fire. The front matter was found at the Sage’s Rest:</p>
+<blockquote>
+<p><strong>Dedication.</strong> To those who remember what cannot be forgotten, to those who seek what must not be found, to those who speak what should not be spoken, and to the Nine, whose names I now return.</p>
+<p><strong>Introduction.</strong> There are gaps in our history. Not the natural erosion of time, but deliberate excisions—surgical removals of knowledge that leave behind only the faint scars of absence. In every realm, in every archive, in every oral tradition, I have found the same pattern: nine absences where something once stood.</p>
+<p>This work seeks to name what has been unnamed, to remember what has been forgotten, to reconstruct what has been deliberately destroyed. —J.G.</p>
+</blockquote>
+<p>The table of contents lists, with page numbers:</p>
+<ul>
+<li>
+<p>I. The First of All Mothers</p>
+</li>
+<li>
+<p>II. The Sovereign King of Endings</p>
+</li>
+<li>
+<p>III. The Unbroken Song of Creation</p>
+</li>
+<li>
+<p>IV. The Infinitely Boundless Pair</p>
+</li>
+<li>
+<p>V. The Zephyr Between Horizons</p>
+</li>
+<li>
+<p>VI. The Cairn of Endless Ages</p>
+</li>
+<li>
+<p>VII. The Tide of Ceaseless Forms</p>
+</li>
+<li>
+<p>VIII. The Untamed Feral Flame</p>
+</li>
+<li>
+<p>IX. The Stillness Beneath the Shadows</p>
+</li>
+</ul></div></article><article class="card" id="the-archive-covenant-s-four-verses" data-k="the archive covenant’s four verses a lectern book in the sage’s rest · solargold 22–23  
+  ilya i ulmë (i. the void)  
+first, know this: there is a void where knowledge once lived. not emptiness that never held anything, but absence—the shape of what was taken. this is the most dangerous lie: that what is missing was never there at all. the darkness speaks loudest in what it refuses to echo. 
+  ilya i gwath (ii. the shadow)  
+what was stolen does not simply vanish. it persists in shadow and whisper, in dreams half-remembered and words that catch in the throat. truth denied still echoes. the faithful keeper knows: what endures in twilight cannot be fully extinguished, only obscured. and obscurity is not erasure. 
+  ilya i ithil (iii. the moon)  
+against the void stands memory—fragile as moonlight on water, yet persistent as the tide. we who preserve do not serve ourselves but those yet to come. each record kept, each truth spoken, each fragment saved is a silver thread woven against forgetting. this is the covenant: to remember when others cannot, will not, dare not. 
+  ilya i anor (iv. the light)  
+the burden of preservation is this: truth revealed is truth endangered. yet still we must bring it forth into light, for knowledge kept in darkness serves nothing. like sunrise burning away the night, we must illuminate what was hidden—not for glory, but for necessity. the golden duty of the keeper: to remember is not enough. one must also reveal. 
+ "><h3 class="card-name">The Archive Covenant’s four verses</h3><div class="badges"><span class="badge k-doc">Verse</span></div><p class="meta"><span>A lectern book in the Sage’s Rest</span><span>Solargold 22–23</span></p><div class="body"><blockquote>
+<p><strong>Ilya i Ulmë (I. The Void)</strong><br />
+First, know this: there is a void where knowledge once lived. Not emptiness that never held anything, but absence—the shape of what was taken. This is the most dangerous lie: that what is missing was never there at all. The darkness speaks loudest in what it refuses to echo.</p>
+<p><strong>Ilya i Gwath (II. The Shadow)</strong><br />
+What was stolen does not simply vanish. It persists in shadow and whisper, in dreams half-remembered and words that catch in the throat. Truth denied still echoes. The faithful keeper knows: what endures in twilight cannot be fully extinguished, only obscured. And obscurity is not erasure.</p>
+<p><strong>Ilya i Ithil (III. The Moon)</strong><br />
+Against the void stands memory—fragile as moonlight on water, yet persistent as the tide. We who preserve do not serve ourselves but those yet to come. Each record kept, each truth spoken, each fragment saved is a silver thread woven against forgetting. This is the covenant: to remember when others cannot, will not, dare not.</p>
+<p><strong>Ilya i Anor (IV. The Light)</strong><br />
+The burden of preservation is this: truth revealed is truth endangered. Yet still we must bring it forth into light, for knowledge kept in darkness serves nothing. Like sunrise burning away the night, we must illuminate what was hidden—not for glory, but for necessity. The golden duty of the keeper: to remember is not enough. One must also reveal.</p>
+</blockquote></div></article></div>
+<div class="tab-panel" id="tab-jade"><div class="group-head"><h2>The Jade Provinces</h2></div><article class="card" id="retsujir-s-unfinished-letter" data-k="retsujirō’s unfinished letter cold brazier in her quarters · emberfall 18  begun and abandoned more than once, by the look of the corrections. her quarters hold no body; the stand for the ceremonial weapon is empty and the traveling gear is gone from its chest. 
+ 
+ “i have not spoken of the trial since the boy left, and my silence has been taken for certainty. it was never certainty. i said what i said that night because i was afraid, and i have recognized that now. if he is what i fear, then the fear was still no excuse. and if he is not then i must make amends in any way i can. i will reach out at once to my contacts at—” 
+ "><h3 class="card-name">Retsujirō’s unfinished letter</h3><div class="badges"><span class="badge k-doc">Letter</span></div><p class="meta"><span>Cold brazier in her quarters</span><span>Emberfall 18</span></p><div class="body"><p>Begun and abandoned more than once, by the look of the corrections. Her quarters hold no body; the stand for the ceremonial weapon is empty and the traveling gear is gone from its chest.</p>
+<blockquote>
+<p>“I have not spoken of the Trial since the boy left, and my silence has been taken for certainty. It was never certainty. I said what I said that night because I was afraid, and I have recognized that now. If he is what I fear, then the fear was still no excuse. And if he is not then I must make amends in any way I can. I will reach out at once to my contacts at—”</p>
+</blockquote></div></article><article class="card" id="the-kaisuo-record" data-k="the kaisuo record vault of stars, hidden behind a stretch of blank wall in the east corridor · emberfall 18  
+  record of the student kaisuo, set down and sealed by order of the assembled masters, 1473 au.  on the night of the trial of resonance the student kaisuo fell to lightning that belongs to no modern path. before his fall the masters had judged him the finest student of ka in living memory, and several among us believed his flame would carry him further than any practitioner of this generation, perhaps of this millennium. his heart cannot be heard, his breath cannot be seen, and his wounds do not worsen or heal. he does not wake, does not age, and does not decline. yet, he is alive. the sui rites of restoration found nothing in him to restore, and the ku rites of passage found no one departing. it is the judgment of this record that something reached him as he fell and set him aside from time, and that no hand within these walls did it. the gates are sealed and his condition entrusted to silence. he is kept in the far room of the sanctum, tended by master omashi and watched in shifts. may he open his eyes among us, or be released in peace, and may whoever holds his thread be a friend to him. 
+ "><h3 class="card-name">The Kaisuo record</h3><div class="badges"><span class="badge k-doc">Record</span></div><p class="meta"><span>Vault of Stars, hidden behind a stretch of blank wall in the east corridor</span><span>Emberfall 18</span></p><div class="body"><blockquote>
+<p><strong>Record of the student Kaisuo, set down and sealed by order of the assembled masters, 1473 AU.</strong> On the night of the Trial of Resonance the student Kaisuo fell to lightning that belongs to no modern Path. Before his fall the masters had judged him the finest student of Ka in living memory, and several among us believed his flame would carry him further than any practitioner of this generation, perhaps of this millennium. His heart cannot be heard, his breath cannot be seen, and his wounds do not worsen or heal. He does not wake, does not age, and does not decline. Yet, he is alive. The Sui rites of restoration found nothing in him to restore, and the Ku rites of passage found no one departing. It is the judgment of this record that something reached him as he fell and set him aside from time, and that no hand within these walls did it. The gates are sealed and his condition entrusted to silence. He is kept in the far room of the sanctum, tended by Master Omashi and watched in shifts. May he open his eyes among us, or be released in peace, and may whoever holds his thread be a friend to him.</p>
+</blockquote></div></article><article class="card" id="retsujir-s-private-assessment-of-raiten" data-k="retsujirō’s private assessment of raiten vault of stars · emberfall 18  
+  private assessment of the student raiten, kept by master retsujirō, 1473 au.  he was left at our gates in the dead of winter with no clan, no sigil, and no letter. the storm that night circled the mountain without once touching it. i have watched him for eighteen years, and i set down here what i believe and have told no one. his lightning is not a failure to find a path. i believe it is older than the modern paths. the fragments we keep of the northern orders describe monks who drew the storm through their bodies as easily as breath, and called the drawing worship. and i have seen it once, in my youth, over a century ago, and never again since then until this child. at the trial i watched something wake in him that no one on this mountain taught him. i have overseen students losing hold of a technique for over a century, and this was not that. in my fear, i called him a calamity to the masters in private. and after the trial between raiten and kaisuo, i did so once more before the assembled students. however, my folly is letting fear of a prophecy control me; as the venerable master renjiro of the ku path reminded me, no one but ku itself may know for certain what a prophecy means. 
+ "><h3 class="card-name">Retsujirō’s private assessment of Raiten</h3><div class="badges"><span class="badge k-doc">Record</span></div><p class="meta"><span>Vault of Stars</span><span>Emberfall 18</span></p><div class="body"><blockquote>
+<p><strong>Private assessment of the student Raiten, kept by Master Retsujirō, 1473 AU.</strong> He was left at our gates in the dead of winter with no clan, no sigil, and no letter. The storm that night circled the mountain without once touching it. I have watched him for eighteen years, and I set down here what I believe and have told no one. His lightning is not a failure to find a Path. I believe it is older than the modern Paths. The fragments we keep of the northern orders describe monks who drew the storm through their bodies as easily as breath, and called the drawing worship. And I have seen it once, in my youth, over a century ago, and never again since then until this child. At the Trial I watched something wake in him that no one on this mountain taught him. I have overseen students losing hold of a technique for over a century, and this was not that. In my fear, I called him a calamity to the masters in private. And after the Trial between Raiten and Kaisuo, I did so once more before the assembled students. However, my folly is letting fear of a prophecy control me; as the Venerable Master Renjiro of the Ku path reminded me, no one but Ku itself may know for certain what a prophecy means.</p>
+</blockquote></div></article><article class="card" id="the-prophecy-sheaf" data-k="the prophecy sheaf vault of stars, with the poem from the star-chart case · emberfall 18–21  three slips of age-dark paper lay in the vault, each with a single verse in an old hand. in the fu tradition these were spoken to the wind and written after; the ku inherited the keeping of them. 
+ 
+ the storm meets the flame; 
+the flame sleeps and will not fail. 
+now the end begins. 
+ the lion’s red blood 
+flows in the veins of the land. 
+light bound to darkness. 
+ ninth of the fourth turn: 
+gold and silver at his gate. 
+endings must end, too. 
+ "><h3 class="card-name">The prophecy sheaf</h3><div class="badges"><span class="badge k-doc">Verse</span></div><p class="meta"><span>Vault of Stars, with the poem from the star-chart case</span><span>Emberfall 18–21</span></p><div class="body"><p>Three slips of age-dark paper lay in the vault, each with a single verse in an old hand. In the Fu tradition these were spoken to the wind and written after; the Ku inherited the keeping of them.</p>
+<blockquote>
+<p>The storm meets the flame;<br />
+The flame sleeps and will not fail.<br />
+Now the end begins.</p>
+<p>The lion’s red blood<br />
+Flows in the veins of the land.<br />
+Light bound to darkness.</p>
+<p>Ninth of the fourth turn:<br />
+Gold and Silver at his gate.<br />
+Endings must end, too.</p>
+</blockquote></div></article><article class="card" id="the-caelric-scroll-case-and-its-riddle" data-k="the caelric scroll case and its riddle vault of stars; the riddle came to the party at kokū-in · emberfall 18–21  a document case of dark lacquer, longer than a forearm, bound in crown-gold fittings gone soft with age. inside is the caelric lineage scroll. a riddle came with the scroll: 
+ 
+ speak the name of the being sought, and the seal shall yield. 
+five names are refused. the sixth alone is true. 
+ not the being whose name the smokeless burning bore, 
+then walked where lions ceased their war. 
+ not the being whose name a marriage raised to crown, 
+then taught the royal lion to stand. 
+ not the being sent away while three hands ruled one throne, 
+then returned beneath the lion lying low. 
+ not the being whose name bought blood with parchment first, 
+then took another lion’s posture for his tale. 
+ not the being named by the reckoning born of ash, 
+which set the uncle next, yet could not judge his right. 
+ but the being named beside the later bearer of the smokeless name, 
+which set right the line once and for all. 
+ "><h3 class="card-name">The Caelric scroll case and its riddle</h3><div class="badges"><span class="badge k-doc">Riddle</span></div><p class="meta"><span>Vault of Stars; the riddle came to the party at Kokū-in</span><span>Emberfall 18–21</span></p><div class="body"><p>A document case of dark lacquer, longer than a forearm, bound in crown-gold fittings gone soft with age. Inside is the Caelric lineage scroll. A riddle came with the scroll:</p>
+<blockquote>
+<p>Speak the name of the being sought, and the seal shall yield.<br />
+Five names are refused. The sixth alone is true.</p>
+<p>Not the being whose name the smokeless burning bore,<br />
+then walked where lions ceased their war.</p>
+<p>Not the being whose name a marriage raised to crown,<br />
+then taught the royal lion to stand.</p>
+<p>Not the being sent away while three hands ruled one throne,<br />
+then returned beneath the lion lying low.</p>
+<p>Not the being whose name bought blood with parchment first,<br />
+then took another lion’s posture for his tale.</p>
+<p>Not the being named by the reckoning born of ash,<br />
+which set the uncle next, yet could not judge his right.</p>
+<p>But the being named beside the later bearer of the smokeless name,<br />
+which set right the line once and for all.</p>
+</blockquote></div></article><article class="card" id="the-guiding-stars" data-k="the guiding stars renjiro kurogami · emberfall 22  “there are three of them, the radiant one’s closest advisors and her successors.” elena vrasten “keeps the doctrine at dawnmere” and “seldom leaves the glass basilica.” elindra morvain “holds sanctum ardent and the faith’s internal affairs” and is “the face of the trials against the faithful on the mainland.” erasmus dain “sits at the grand temple in brighthold and handles the path’s dealings with the crown and the high forum,” and “by every account he’s an easy man to like.” his point: “since the radiant one returned, the path has a voice in councils it never sat on before, and people who used to oppose it defer to it now. my sources credit her guiding stars.” "><h3 class="card-name">The Guiding Stars</h3><div class="badges"><span class="badge k-said">Spoken</span></div><p class="meta"><span>Renjiro Kurogami</span><span>Emberfall 22</span></p><div class="body"><p>“There are three of them, the Radiant One’s closest advisors and her successors.” Elena Vrasten “keeps the doctrine at Dawnmere” and “seldom leaves the Glass Basilica.” Elindra Morvain “holds Sanctum Ardent and the faith’s internal affairs” and is “the face of the trials against the Faithful on the mainland.” Erasmus Dain “sits at the grand temple in Brighthold and handles the Path’s dealings with the Crown and the High Forum,” and “By every account he’s an easy man to like.” His point: “Since the Radiant One returned, the Path has a voice in councils it never sat on before, and people who used to oppose it defer to it now. My sources credit her Guiding Stars.”</p></div></article></div>
+<div class="tab-panel" id="tab-notes-from-m"><div class="group-head"><h2>Notes from M</h2></div><article class="card" id="the-first-note" data-k="the first note the golden snipe · ambertide 18  left on the bed of the suite after kaelen, disguised as a silver docks merchant, told the party to collect their effects. expensive paper, formal penmanship with feminine flourishes, a faint scent of night-blooming jasmine and sandalwood, and a locked room entered with no sign of force. 
+ 
+ “what you have forgotten still remembers you.” —m 
+ "><h3 class="card-name">The first note</h3><div class="badges"><span class="badge k-doc">Note</span></div><p class="meta"><span>The Golden Snipe</span><span>Ambertide 18</span></p><div class="body"><p>Left on the bed of the suite after Kaelen, disguised as a Silver Docks merchant, told the party to collect their effects. Expensive paper, formal penmanship with feminine flourishes, a faint scent of night-blooming jasmine and sandalwood, and a locked room entered with no sign of force.</p>
+<blockquote>
+<p>“What you have forgotten still remembers you.” —M</p>
+</blockquote></div></article><article class="card" id="the-second-note" data-k="the second note the golden snipe · ambertide 22–23  placed with kaelen’s briefing, in the same feminine noble hand as the first. 
+ 
+ “in one light, truth. in another, its opposite.” —m 
+ "><h3 class="card-name">The second note</h3><div class="badges"><span class="badge k-doc">Note</span></div><p class="meta"><span>The Golden Snipe</span><span>Ambertide 22–23</span></p><div class="body"><p>Placed with Kaelen’s briefing, in the same feminine noble hand as the first.</p>
+<blockquote>
+<p>“In one light, truth. In another, its opposite.” —M</p>
+</blockquote></div></article><article class="card" id="the-third-note" data-k="the third note brighthold · ambertide 23–24  received between the visit to the temple of the fifteen and kaelen’s debrief. 
+ 
+ “temples are built on top of temples. thrones rest over even older thrones. dig deep enough beneath any altar and you find what the altar was built to bury.” —m 
+ "><h3 class="card-name">The third note</h3><div class="badges"><span class="badge k-doc">Note</span></div><p class="meta"><span>Brighthold</span><span>Ambertide 23–24</span></p><div class="body"><p>Received between the visit to the Temple of the Fifteen and Kaelen’s debrief.</p>
+<blockquote>
+<p>“Temples are built on top of temples. Thrones rest over even older thrones. Dig deep enough beneath any altar and you find what the altar was built to bury.” —M</p>
+</blockquote></div></article><article class="card" id="the-fourth-note" data-k="the fourth note forest road outside greenreach · solargold 4  the last item in a chest of ruby cradle wood with crimson-silver fittings, set in the road shortly after the party arrived. 
+ 
+ “cast by fifteen lights, nine shadows; beneath the hymns, the first songs wake.” —m 
+ "><h3 class="card-name">The fourth note</h3><div class="badges"><span class="badge k-doc">Note</span></div><p class="meta"><span>Forest road outside Greenreach</span><span>Solargold 4</span></p><div class="body"><p>The last item in a chest of Ruby Cradle wood with Crimson-Silver fittings, set in the road shortly after the party arrived.</p>
+<blockquote>
+<p>“Cast by fifteen lights, nine shadows; beneath the hymns, the first songs wake.” —M</p>
+</blockquote></div></article><article class="card" id="the-lunebridge-letter" data-k="the lunebridge letter lunebridge, north altar · solargold 11–22  a sealed letter lay in the basin of the north altar on fresh parchment, closed with golden merchant’s wax that matched the drippings on the altar. 
+ 
+ to whomever the tide brings— 
+ before i came to medir, my brother once told me that war is a failure of statecraft, though my mother would have called us foxes attempting to live among wolves. i believed him, and when i made my choice of mercy over blade i thought i was proving strength through compassion. instead, i proved only that i did not yet understand the price of defying those who deal in absolutes. 
+ i was exiled for choosing to preserve rather than destroy. sent across the water with nothing but conviction and the golden marks of a sun i no longer worshiped. now i find myself wearing exile once more by those seeking to destroy, though this time framed for crimes i did not commit. they call me murderer. traitor. heretic. perhaps the last is truest, in their light. 
+ the way forward is sealed for now, bound to the moon’s absence, and so i leave these words outside its keeping. i have remained here longer than was wise, sheltered by silence. it was enough, for a time. but i recognize that any worthwhile venture involves risk, and the time for concealment has passed. there are answers in solrest, where they say a herald wears flames like a crown—whispered about among those who gather in hidden gardens, who speak of truths forgotten and powers buried. 
+ if this letter finds you and feels unfinished, that is intentional, stranger. some things are only legible to those already holding the key. trust those who keep. trust nothing that has no shadow. 
+ until the tide turns again, 
+ —m 
+ "><h3 class="card-name">The Lunebridge letter</h3><div class="badges"><span class="badge k-doc">Letter</span></div><p class="meta"><span>Lunebridge, north altar</span><span>Solargold 11–22</span></p><div class="body"><p>A sealed letter lay in the basin of the north altar on fresh parchment, closed with golden merchant’s wax that matched the drippings on the altar.</p>
+<blockquote>
+<p>To whomever the tide brings—</p>
+<p>Before I came to Medir, my brother once told me that war is a failure of statecraft, though my mother would have called us foxes attempting to live among wolves. I believed him, and when I made my choice of mercy over blade I thought I was proving strength through compassion. Instead, I proved only that I did not yet understand the price of defying those who deal in absolutes.</p>
+<p>I was exiled for choosing to preserve rather than destroy. Sent across the water with nothing but conviction and the golden marks of a sun I no longer worshiped. Now I find myself wearing exile once more by those seeking to destroy, though this time framed for crimes I did not commit. They call me murderer. Traitor. Heretic. Perhaps the last is truest, in their Light.</p>
+<p>The way forward is sealed for now, bound to the moon’s absence, and so I leave these words outside its keeping. I have remained here longer than was wise, sheltered by Silence. It was enough, for a time. But I recognize that any worthwhile venture involves risk, and the time for concealment has passed. There are answers in Solrest, where they say a herald wears flames like a crown—whispered about among those who gather in hidden gardens, who speak of truths forgotten and powers buried.</p>
+<p>If this letter finds you and feels unfinished, that is intentional, stranger. Some things are only legible to those already holding the key. Trust those who Keep. Trust nothing that has no shadow.</p>
+<p>Until the tide turns again,</p>
+<p>—M</p>
+</blockquote></div></article><article class="card" id="the-kok-in-letter" data-k="the kokū-in letter kokū-in · emberfall 21  found with vayne’s journal and the hand’s papers. 
+ 
+ i saw the crest on your coat while you were paying the girl at the counter, and i have been across the street since, which is the better part of an hour now. i am not coming in. one of my reasons is that i do not know yet whether you are safe to sit down with. 
+ i know where that crest is from. i know the country and i know the house and i know the story that goes with it, the one about the evil that took your family from you. where i come from, that story has an ending. 
+ i am guessing that is not how it went for you. if i have it right, we came out of the same world and it was not the same world. i know that sounds like a turn of phrase. it is not. nearly twenty-five years i have had to sit with it and i still could not explain to you how it works. 
+ be careful who you talk to, and never tell anyone the truth about where you came from. pick a story now and keep it the same every time you tell it. 
+ the institutions here work the way they did in the world we came from. the decent people in them are outnumbered and slow, and the ones who aren’t decent are patient and have more power. be wary of all of them. 
+ there is a presence in these islands that i recognize. it moves eerily similar to something that reminds me of home. i have not been able to get close enough to learn what it is, and i have stopped trying for now, because the two people i sent to look into it have not returned. be very wary of this. 
+ something is coming in this world, and i would even say it has already started. when it arrives fully, it will be a reckoning, of sorts, and you and i will be counted as enemies by those on every side of it. 
+ anyone who offers to protect you wants something from you. that includes me. ask what it is before you say yes, and don’t say yes because someone was kind to you. 
+ if you trust me, stay somewhere i can find you. if you don’t, stay safe. 
+ — m 
+ "><h3 class="card-name">The Kokū-in letter</h3><div class="badges"><span class="badge k-doc">Letter</span></div><p class="meta"><span>Kokū-in</span><span>Emberfall 21</span></p><div class="body"><p>Found with Vayne’s journal and the Hand’s papers.</p>
+<blockquote>
+<p>I saw the crest on your coat while you were paying the girl at the counter, and I have been across the street since, which is the better part of an hour now. I am not coming in. One of my reasons is that I do not know yet whether you are safe to sit down with.</p>
+<p>I know where that crest is from. I know the country and I know the house and I know the story that goes with it, the one about the evil that took your family from you. Where I come from, that story has an ending.</p>
+<p>I am guessing that is not how it went for you. If I have it right, we came out of the same world and it was not the same world. I know that sounds like a turn of phrase. It is not. Nearly twenty-five years I have had to sit with it and I still could not explain to you how it works.</p>
+<p>Be careful who you talk to, and never tell anyone the truth about where you came from. Pick a story now and keep it the same every time you tell it.</p>
+<p>The institutions here work the way they did in the world we came from. The decent people in them are outnumbered and slow, and the ones who aren’t decent are patient and have more power. Be wary of all of them.</p>
+<p>There is a presence in these islands that I recognize. It moves eerily similar to something that reminds me of home. I have not been able to get close enough to learn what it is, and I have stopped trying for now, because the two people I sent to look into it have not returned. Be very wary of this.</p>
+<p>Something is coming in this world, and I would even say it has already started. When it arrives fully, it will be a reckoning, of sorts, and you and I will be counted as enemies by those on every side of it.</p>
+<p>Anyone who offers to protect you wants something from you. That includes me. Ask what it is before you say yes, and don’t say yes because someone was kind to you.</p>
+<p>If you trust me, stay somewhere I can find you. If you don’t, stay safe.</p>
+<p>— M</p>
+</blockquote></div></article></div>
+<div class="tab-panel" id="tab-misc"><div class="group-head"><h2>Miscellaneous</h2></div><article class="card" id="from-the-sacred-archives-of-f-shoku-in-the-windweaver-s-pillar" data-k="from the sacred archives of fūshoku-in (the windweaver&#x27;s pillar) transcribed from old jadecat script and translated to mediran in 974 au; original recovered from the monastery’s sealed vault, about 600 bu · ambertide 21–22  
+ the mountain speaks, the ancestors have dreamed: 
+ 虚后の燦然 (kyokō no sanzen) comes with the tide that flows backward, its radiance as spring snow that melts before touching earth. the ten thousand things will lose their names. when 消失大劫 (shōshitsu daikō) blooms like cherry blossoms in the depths of winter, the roots that bind the world grow shallow. 
+ yet the way flows beneath stone. before 消失大劫 (shōshitsu daikō), the children of wind must fade like morning mist, stepping beyond the edge of sight. what the earth remembers, the sky shall preserve. in hidden groves we plant tomorrow’s hope, waiting for the season of return. 
+ when the sleeping crown breathes and mountains remember their youth, when the wheel completes its ancient turning, then shall 風霊児 (fūreiji) walk between earth and heaven. through this one the old current flows—lightning born before the first storm, wind that shaped the first mountain. the covenant written in cloud and bone shall find its fulfillment. 
+ shadows lengthen. our songs become silence. we follow the path that has no footprints. 
+ 
+ archivist’s note: “i have endeavored to preserve the sacred poetry of this text whilst rendering it comprehensible to mediran readers. regrettably, several terms of the ancient jadecat tongue resist translation, being concepts foreign to our understanding. these i have left in their original form with phonetic guidance, trusting that scholars greater than i might one day unlock their meaning.” "><h3 class="card-name">From the Sacred Archives of Fūshoku-in (The Windweaver's Pillar)</h3><div class="badges"><span class="badge k-doc">Verse</span></div><p class="meta"><span>Transcribed from Old Jadecat Script and translated to Mediran in 974 AU; original recovered from the monastery’s sealed vault, about 600 BU</span><span>Ambertide 21–22</span></p><div class="body"><blockquote>
+<p>The mountain speaks, the ancestors have dreamed:</p>
+<p>虚后の燦然 (Kyokō no Sanzen) comes with the tide that flows backward, its radiance as spring snow that melts before touching earth. The ten thousand things will lose their names. When 消失大劫 (Shōshitsu Daikō) blooms like cherry blossoms in the depths of winter, the roots that bind the world grow shallow.</p>
+<p>Yet the Way flows beneath stone. Before 消失大劫 (Shōshitsu Daikō), the children of wind must fade like morning mist, stepping beyond the edge of sight. What the earth remembers, the sky shall preserve. In hidden groves we plant tomorrow’s hope, waiting for the season of return.</p>
+<p>When the sleeping crown breathes and mountains remember their youth, when the wheel completes its ancient turning, then shall 風霊児 (Fūreiji) walk between earth and heaven. Through this one the old current flows—lightning born before the first storm, wind that shaped the first mountain. The covenant written in cloud and bone shall find its fulfillment.</p>
+<p>Shadows lengthen. Our songs become silence. We follow the path that has no footprints.</p>
+</blockquote>
+<p>Archivist’s Note: “I have endeavored to preserve the sacred poetry of this text whilst rendering it comprehensible to Mediran readers. Regrettably, several terms of the ancient Jadecat tongue resist translation, being concepts foreign to our understanding. These I have left in their original form with phonetic guidance, trusting that scholars greater than I might one day unlock their meaning.”</p></div></article><article class="card" id="the-dawnmere-parchment" data-k="the dawnmere parchment the oracle’s sacellum at dawnmere · solargold 4–6  beneath the oracle’s statue at dawnmere, a moth with silvery wings slid a section of floor aside onto narrow steps. in the chamber below stood nine spotless granite statues: a pregnant doe, a raven on a pillar, a hummingbird on a yew branch, a giant eagle descending on a stag, a swift, an elephant, an octopus, a feral hound, and a black panther. a folded parchment lay in the hollow beneath the panther’s forepaw. 
+ 
+ “seek the arch that spans the wizard’s strait. in the moon’s absence, the waters retreat and memory surfaces: a bridge of old stone connecting shore to sacred isle. when no light reflects upon the sea, the daughters’ sanctuary stands revealed beyond the revealed path.” 
+ "><h3 class="card-name">The Dawnmere parchment</h3><div class="badges"><span class="badge k-doc">Scroll</span></div><p class="meta"><span>The Oracle’s sacellum at Dawnmere</span><span>Solargold 4–6</span></p><div class="body"><p>Beneath the Oracle’s statue at Dawnmere, a moth with silvery wings slid a section of floor aside onto narrow steps. In the chamber below stood nine spotless granite statues: a pregnant doe, a raven on a pillar, a hummingbird on a yew branch, a giant eagle descending on a stag, a swift, an elephant, an octopus, a feral hound, and a black panther. A folded parchment lay in the hollow beneath the panther’s forepaw.</p>
+<blockquote>
+<p>“Seek the arch that spans the wizard’s strait. In the moon’s absence, the waters retreat and memory surfaces: a bridge of old stone connecting shore to sacred isle. When no light reflects upon the sea, the daughters’ sanctuary stands revealed beyond the revealed path.”</p>
+</blockquote></div></article><article class="card" id="death-mask-access-records" data-k="death-mask access records meredith, archive room twelve · solargold 11  the commission records, estate inventories, collector catalogs and provenance logs for the marvels death masks are all in order, with no censored pages. marginal notes and access stamps show that about two years ago someone requested the same scattered records piecemeal: an archive in garnellia, one in brighthold, a ruby cradle collector’s vault, and an artisan registry in selmaris. the requester never bought a mask, commissioned a replica, published, or joined an institution, and was approved for tightly controlled records. every request is signed with the initials “j. m.”. "><h3 class="card-name">Death-mask access records</h3><div class="badges"><span class="badge k-doc">Record</span></div><p class="meta"><span>Meredith, Archive Room Twelve</span><span>Solargold 11</span></p><div class="body"><p>The commission records, estate inventories, collector catalogs and provenance logs for the Marvels death masks are all in order, with no censored pages. Marginal notes and access stamps show that about two years ago someone requested the same scattered records piecemeal: an archive in Garnellia, one in Brighthold, a Ruby Cradle collector’s vault, and an artisan registry in Selmaris. The requester never bought a mask, commissioned a replica, published, or joined an institution, and was approved for tightly controlled records. Every request is signed with the initials “J. M.”.</p></div></article><article class="card" id="the-carmivelle-card" data-k="the carmivelle card unmarked parcel with no sender · solargold 25–stormcrest 4  the front shows a split pomegranate in crimson, pressed in a heraldic style several centuries out of date. the back is written in a clean, unhurried hand. 
+ 
+ “you are sought by more than you know, and known by more than have sought you.” 
+ 
+ the parcel also held anguish, the dagger otho gave norei on the road out of ashgrove. "><h3 class="card-name">The Carmivelle card</h3><div class="badges"><span class="badge k-doc">Card</span></div><p class="meta"><span>Unmarked parcel with no sender</span><span>Solargold 25–Stormcrest 4</span></p><div class="body"><p>The front shows a split pomegranate in crimson, pressed in a heraldic style several centuries out of date. The back is written in a clean, unhurried hand.</p>
+<blockquote>
+<p>“You are sought by more than you know, and known by more than have sought you.”</p>
+</blockquote>
+<p>The parcel also held Anguish, the dagger Otho gave Norei on the road out of Ashgrove.</p></div></article><article class="card" id="the-note-from-otho-s-village" data-k="the note from otho’s village written in primordial, answering otho’s bird · stormcrest 4  
+ o — 
+ word reached us. we are well. 
+ a woman arrived before your bird did. she was not from the delta, nor the march, her manners and dressings were too clean for either. asked your name and others we don’t know. said she had traveled some distance and would travel further still. 
+ she departed the same evening, heading east. 
+ come careful. come quiet. 
+ "><h3 class="card-name">The note from Otho’s village</h3><div class="badges"><span class="badge k-doc">Letter</span></div><p class="meta"><span>Written in Primordial, answering Otho’s bird</span><span>Stormcrest 4</span></p><div class="body"><blockquote>
+<p>O —</p>
+<p>Word reached us. We are well.</p>
+<p>A woman arrived before your bird did. She was not from the delta, nor the March, her manners and dressings were too clean for either. Asked your name and others we don’t know. Said she had traveled some distance and would travel further still.</p>
+<p>She departed the same evening, heading east.</p>
+<p>Come careful. Come quiet.</p>
+</blockquote></div></article><article class="card" id="the-luminary-s-message-to-jet" data-k="the luminary’s message to jet during the fight at the crucible, after his companions went down · stormcrest 26  
+ “hear me, disciple of the radiant path. my utter radiance drives back this wretched flame. every wound you bear is known to me, child of the everlasting dawn. do not despair, but surrender to my light. kneel within my splendor. be filled with my boundless grace, and take up the might promised to my servant. invoke me now with all your heart.” 
+ "><h3 class="card-name">The Luminary’s message to Jet</h3><div class="badges"><span class="badge k-said">Spoken</span></div><p class="meta"><span>During the fight at the Crucible, after his companions went down</span><span>Stormcrest 26</span></p><div class="body"><blockquote>
+<p>“HEAR ME, DISCIPLE OF THE RADIANT PATH. MY UTTER RADIANCE DRIVES BACK THIS WRETCHED FLAME. EVERY WOUND YOU BEAR IS KNOWN TO ME, CHILD OF THE EVERLASTING DAWN. DO NOT DESPAIR, BUT SURRENDER TO MY LIGHT. KNEEL WITHIN MY SPLENDOR. BE FILLED WITH MY BOUNDLESS GRACE, AND TAKE UP THE MIGHT PROMISED TO MY SERVANT. INVOKE ME NOW WITH ALL YOUR HEART.”</p>
+</blockquote></div></article><article class="card" id="atarah-to-jet" data-k="atarah to jet after the rescue, as she thanked each of you in turn · stormcrest 26–27  
+ “i sense something familiar in you, young ser marvels of garnellia. your power draws from a well not far from mine.” 
+ “i felt it—from within the crystal. when she reached out for you. when you invoked her name, and what followed.” 
+ “you should understand what i am telling you. the luminary is the most silent of all the ascendants. she does not answer prayers in the way the others do. in over a century of life on medir, i can count the moments i have known her to reach through the silence on one hand.” 
+ “yet, she reached for you today.” 
+ “the luminary’s messages are often even more enigmatic than the oracle’s. when what she gives you is difficult to follow, know that there is one other in medir who has spent a lifetime learning to hear her. you need only find me.” 
+ "><h3 class="card-name">Atarah to Jet</h3><div class="badges"><span class="badge k-said">Spoken</span></div><p class="meta"><span>After the rescue, as she thanked each of you in turn</span><span>Stormcrest 26–27</span></p><div class="body"><blockquote>
+<p>“I sense something familiar in you, young Ser Marvels of Garnellia. Your power draws from a well not far from mine.”</p>
+<p>“I felt it—from within the crystal. When she reached out for you. When you invoked her name, and what followed.”</p>
+<p>“You should understand what I am telling you. The Luminary is the most silent of all the Ascendants. She does not answer prayers in the way the others do. In over a century of life on Medir, I can count the moments I have known her to reach through the silence on one hand.”</p>
+<p>“Yet, she reached for you today.”</p>
+<p>“The Luminary’s messages are often even more enigmatic than The Oracle’s. When what she gives you is difficult to follow, know that there is one other in Medir who has spent a lifetime learning to hear her. You need only find me.”</p>
+</blockquote></div></article><article class="card" id="opos-to-the-agents-of-v-e-r-u" data-k="opos, to the agents of v.e.r.u. golden snipe, plain seal with no house mark · stormcrest 26–27  a single envelope addressed only to your room, in an economical and careful hand. 
+ 
+ to the agents of v.e.r.u., 
+ i owe you the courtesy of greater honesty than i offered on the road. i am a keeper of knowledge—but not in the way i presented myself. i belong to an order that has worked for generations to preserve what certain interests would see erased. in your own way, and without knowing it, you have been doing the same work. 
+ i want you to know that brother pelleas is safe. he is under the care of people i trust, and he will remain so. you need not carry that worry. 
+ the work you are doing matters more than you yet understand. do not be discouraged by what the coming weeks may bring. 
+ i hope our paths cross again under better circumstances. 
+ —opos 
+ "><h3 class="card-name">Opos, to the agents of V.E.R.U.</h3><div class="badges"><span class="badge k-doc">Letter</span></div><p class="meta"><span>Golden Snipe, plain seal with no house mark</span><span>Stormcrest 26–27</span></p><div class="body"><p>A single envelope addressed only to your room, in an economical and careful hand.</p>
+<blockquote>
+<p>To the agents of V.E.R.U.,</p>
+<p>I owe you the courtesy of greater honesty than I offered on the road. I am a keeper of knowledge—but not in the way I presented myself. I belong to an order that has worked for generations to preserve what certain interests would see erased. In your own way, and without knowing it, you have been doing the same work.</p>
+<p>I want you to know that Brother Pelleas is safe. He is under the care of people I trust, and he will remain so. You need not carry that worry.</p>
+<p>The work you are doing matters more than you yet understand. Do not be discouraged by what the coming weeks may bring.</p>
+<p>I hope our paths cross again under better circumstances.</p>
+<p>—Opos</p>
+</blockquote></div></article></div>
+  <p class="empty" id="empty">Nothing in the record matches that.</p>
+  </main>
+</div>
+<script>
+  const btns   = [...document.querySelectorAll('button.tab-btn')];
+  const panels = [...document.querySelectorAll('.tab-panel')];
+  const cards  = [...document.querySelectorAll('.card')];
+  const nav    = document.querySelector('.tabs-nav');
+  btns.forEach(b => { b.setAttribute('role', 'tab'); b.setAttribute('aria-controls', 'tab-' + b.dataset.tab); });
+  panels.forEach(p => p.setAttribute('role', 'tabpanel'));
+
+  /* open a tab; the address keeps it, so party-record.html#radiant opens on the Radiant Path */
+  function show(t, focus) {
+    const btn = btns.find(b => b.dataset.tab === t) || btns[0];
+    btns.forEach(b => {
+      const on = b === btn;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.tabIndex = on ? 0 : -1;
+    });
+    panels.forEach(p => p.classList.toggle('active', p.id === 'tab-' + btn.dataset.tab));
+    const r = btn.getBoundingClientRect(), n = nav.getBoundingClientRect();
+    if (r.left < n.left || r.right > n.right) nav.scrollLeft += r.left - n.left - 16;
+    if (focus) btn.focus();
+    return btn;
+  }
+  btns.forEach(b => b.addEventListener('click', () => {
+    show(b.dataset.tab);
+    history.replaceState(null, '', '#' + b.dataset.tab);
+    const panel = document.getElementById('tab-' + b.dataset.tab);
+    const y = panel.getBoundingClientRect().top + window.scrollY - nav.offsetHeight - 12;
+    if (window.scrollY > y) window.scrollTo(0, y);
+  }));
+  nav.addEventListener('keydown', e => {
+    const i = btns.indexOf(document.activeElement);
+    if (i < 0) return;
+    const keys = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: btns.length - 1 };
+    if (!(e.key in keys)) return;
+    e.preventDefault();
+    const b = show(btns[(keys[e.key] + btns.length) % btns.length].dataset.tab, true);
+    history.replaceState(null, '', '#' + b.dataset.tab);
+  });
+  /* the mouse wheel scrolls the tab bar sideways while it has room to move, so no shift key is needed */
+  nav.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    const max = nav.scrollWidth - nav.clientWidth;
+    if (max <= 0) return;
+    const next = nav.scrollLeft + e.deltaY;
+    if ((e.deltaY < 0 && nav.scrollLeft <= 0) || (e.deltaY > 0 && nav.scrollLeft >= max - 1)) return;
+    e.preventDefault();
+    nav.scrollLeft = Math.max(0, Math.min(max, next));
+  }, { passive: false });
+
+  show(decodeURIComponent(location.hash.slice(1)));
+
+  /* a search looks across every group at once and lists the matches under their group names */
+  const q = document.getElementById('search'), empty = document.getElementById('empty');
+  q.addEventListener('input', () => {
+    const v = q.value.trim().toLowerCase();
+    document.body.classList.toggle('searching', !!v);
+    let shown = 0;
+    cards.forEach(c => {
+      const hit = !v || c.dataset.k.indexOf(v) > -1;
+      c.classList.toggle('nohit', !hit);
+      if (hit) shown++;
+    });
+    panels.forEach(p => p.classList.toggle('nohit', !!v && !p.querySelector('.card:not(.nohit)')));
+    empty.style.display = shown ? 'none' : 'block';
+  });
+</script>
+</body>
+</html>
