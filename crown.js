@@ -35,21 +35,35 @@
   inlay.className = 'inlay';
   var orn = document.createElementNS(NS, 'svg');
   orn.setAttribute('viewBox', '0 0 1000 60');
+  // each piece carries the delay at which it draws itself in, working outward from the centre
   var d = [
-        '<path class="gl" d="M440 14H560V46H440Z"/>',
-    '<path class="gl" d="M500 4L540 30 500 56 460 30Z"/>',
-    '<path class="gl fine" d="M440 22H476M524 22H560M440 38H476M524 38H560"/>',
-    '<path class="gl fine" d="M440 24H330L322 30M560 24H670L678 30M440 36H330L322 30M560 36H670L678 30"/>',
-    '<path class="gl fine" d="M322 30L310 22H120M678 30L690 22H880"/>'
+    ['M440 14H560V46H440Z', '', 0],
+    ['M500 4L540 30 500 56 460 30Z', '', .15],
+    ['M440 22H476M524 22H560M440 38H476M524 38H560', ' fine', .4],
+    ['M440 24H330L322 30M560 24H670L678 30M440 36H330L322 30M560 36H670L678 30', ' fine', .55],
+    ['M322 30L310 22H120M678 30L690 22H880', ' fine', .8]
   ];
-  [262, 276, 290, 710, 724, 738].forEach(function (x) {
-    d.push('<path class="gl fine" d="M' + x + ' 25L' + (x + 7) + ' 30 ' + x + ' 35 ' + (x - 7) + ' 30Z"/>');
+  [[290, 1.0], [276, 1.08], [262, 1.16], [710, 1.0], [724, 1.08], [738, 1.16]].forEach(function (c) {
+    var x = c[0];
+    d.push(['M' + x + ' 25L' + (x + 7) + ' 30 ' + x + ' 35 ' + (x - 7) + ' 30Z', ' fine', c[1]]);
   });
+  function paths(cls) {
+    return d.map(function (p) {
+      return '<path class="' + cls + p[1] + '" pathLength="1" style="--dl:' + p[2] + 's" d="' + p[0] + '"/>';
+    }).join('');
+  }
   orn.innerHTML =
     '<defs><linearGradient id="crownGold" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1000" y2="0">' +
       '<stop offset="0" stop-color="#b8953f"/><stop offset=".38" stop-color="#e2c77f"/><stop offset=".5" stop-color="#a8832f"/>' +
-      '<stop offset=".62" stop-color="#e2c77f"/><stop offset="1" stop-color="#b8953f"/></linearGradient></defs>' +
-    d.join('');
+      '<stop offset=".62" stop-color="#e2c77f"/><stop offset="1" stop-color="#b8953f"/></linearGradient>' +
+      // a narrow band of light that slides across the gold now and then
+      '<linearGradient id="crownShine" gradientUnits="userSpaceOnUse" x1="-160" y1="0" x2="0" y2="0">' +
+        '<stop offset="0" stop-color="#fff8e2" stop-opacity="0"/><stop offset=".5" stop-color="#ffe9a8" stop-opacity="1"/>' +
+        '<stop offset="1" stop-color="#fff8e2" stop-opacity="0"/>' +
+        '<animateTransform attributeName="gradientTransform" type="translate" values="0 0;0 0;1160 0;1160 0" keyTimes="0;.35;.6;1" dur="9s" begin="2s" repeatCount="indefinite"/>' +
+      '</linearGradient></defs>' +
+    '<g class="draw">' + paths('gl') + '</g>' +
+    '<g class="shine">' + paths('gl') + '</g>';
   ['l', 'r'].forEach(function (side) {
     var run = document.createElement('i'); run.className = 'run ' + side; inlay.appendChild(run);
   });
